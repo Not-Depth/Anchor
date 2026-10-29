@@ -1,0 +1,370 @@
+{
+  "schemaVersion": 1,
+  "id": "demo-hall-fictional",
+  "name": "Demo Hall (fictional)",
+  "dataStatus": "fictional_demo",
+  "disclaimer": "FICTIONAL DEMO DATA. This map does not describe Davis Hall or any other real building. All distances, accessibility details and availability are simulated for demonstration only.",
+  "floors": [
+    { "id": "f1", "name": "Floor 1", "level": 1 },
+    { "id": "f2", "name": "Floor 2", "level": 2 }
+  ],
+  "landmarks": [
+    {
+      "id": "plaza",
+      "name": "North Plaza (outside)",
+      "floorID": "f1",
+      "kind": "outdoor",
+      "arrivalCue": "Open paved area with a bike rack and benches.",
+      "canStartHere": true,
+      "isDestination": true,
+      "schematic": { "x": 0.15, "y": 0.08 }
+    },
+    {
+      "id": "main-entrance",
+      "name": "Main Entrance lobby",
+      "floorID": "f1",
+      "kind": "entrance",
+      "arrivalCue": "Small lobby between two sets of doors, with a floor mat underfoot.",
+      "canStartHere": true,
+      "isDestination": false,
+      "schematic": { "x": 0.15, "y": 0.28 }
+    },
+    {
+      "id": "f1-west-junction",
+      "name": "West junction, Floor 1",
+      "floorID": "f1",
+      "kind": "junction",
+      "arrivalCue": "Corridors meet here; a drinking fountain hums against the wall.",
+      "canStartHere": false,
+      "isDestination": false,
+      "schematic": { "x": 0.15, "y": 0.5 }
+    },
+    {
+      "id": "f1-stairwell-a",
+      "name": "Stairwell A door, Floor 1",
+      "floorID": "f1",
+      "kind": "stair_landing",
+      "arrivalCue": "Heavy door with a push bar; the stairwell echoes when it opens.",
+      "canStartHere": false,
+      "isDestination": false,
+      "schematic": { "x": 0.15, "y": 0.82 }
+    },
+    {
+      "id": "f1-east-junction",
+      "name": "East junction, Floor 1",
+      "floorID": "f1",
+      "kind": "junction",
+      "arrivalCue": "The main corridor ends at a cross corridor; recycling bins stand against the end wall.",
+      "canStartHere": false,
+      "isDestination": false,
+      "schematic": { "x": 0.7, "y": 0.5 }
+    },
+    {
+      "id": "f1-elevator-lobby",
+      "name": "Elevator A lobby, Floor 1",
+      "floorID": "f1",
+      "kind": "elevator_lobby",
+      "arrivalCue": "Small lobby with a call button panel; you may hear the elevator chime.",
+      "canStartHere": false,
+      "isDestination": false,
+      "schematic": { "x": 0.7, "y": 0.82 }
+    },
+    {
+      "id": "room-105",
+      "name": "Room 105 (demo classroom)",
+      "floorID": "f1",
+      "kind": "room",
+      "arrivalCue": "Door with a raised-letter and braille sign reading 105.",
+      "canStartHere": true,
+      "isDestination": true,
+      "schematic": { "x": 0.9, "y": 0.25 }
+    },
+    {
+      "id": "f2-stairwell-a",
+      "name": "Stairwell A door, Floor 2",
+      "floorID": "f2",
+      "kind": "stair_landing",
+      "arrivalCue": "Stairwell door with the floor number in raised letters on the frame.",
+      "canStartHere": false,
+      "isDestination": false,
+      "schematic": { "x": 0.15, "y": 0.82 }
+    },
+    {
+      "id": "f2-elevator-lobby",
+      "name": "Elevator A lobby, Floor 2",
+      "floorID": "f2",
+      "kind": "elevator_lobby",
+      "arrivalCue": "The elevator announces Floor 2 and opens onto a small lobby.",
+      "canStartHere": false,
+      "isDestination": false,
+      "schematic": { "x": 0.7, "y": 0.82 }
+    },
+    {
+      "id": "f2-central-junction",
+      "name": "Central junction, Floor 2",
+      "floorID": "f2",
+      "kind": "junction",
+      "arrivalCue": "Wide carpeted area with a seating area to one side.",
+      "canStartHere": false,
+      "isDestination": false,
+      "schematic": { "x": 0.42, "y": 0.5 }
+    },
+    {
+      "id": "room-201",
+      "name": "Room 201 (demo lab)",
+      "floorID": "f2",
+      "kind": "room",
+      "arrivalCue": "Door with a raised-letter and braille sign reading 201.",
+      "canStartHere": true,
+      "isDestination": true,
+      "schematic": { "x": 0.42, "y": 0.18 }
+    },
+    {
+      "id": "annex-reading-room",
+      "name": "Annex reading room (via skybridge)",
+      "floorID": "f2",
+      "kind": "room",
+      "arrivalCue": "Quiet room just past the skybridge, where the floor changes from tile to carpet.",
+      "canStartHere": false,
+      "isDestination": true,
+      "schematic": { "x": 0.92, "y": 0.5 }
+    }
+  ],
+  "connections": [
+    {
+      "id": "front-steps",
+      "name": "Front entrance steps",
+      "from": "plaza",
+      "to": "main-entrance",
+      "type": "stairs",
+      "direction": "bidirectional",
+      "lengthMeters": 6,
+      "stepFree": "unsuitable",
+      "availability": "available",
+      "verification": { "status": "simulated", "source": "Fictional demo data" },
+      "instructions": {
+        "forward": "Walk up the five front steps to the main entrance doors. There are handrails on both sides.",
+        "reverse": "Go out through the main entrance doors and walk down the five front steps to the plaza."
+      }
+    },
+    {
+      "id": "west-ramp",
+      "name": "West entrance ramp",
+      "from": "plaza",
+      "to": "main-entrance",
+      "type": "ramp",
+      "direction": "bidirectional",
+      "lengthMeters": 18,
+      "stepFree": "confirmed",
+      "availability": "available",
+      "verification": { "status": "simulated", "source": "Fictional demo data" },
+      "instructions": {
+        "forward": "Follow the paved path beside the front steps to the ramp, then go up the ramp to the main entrance doors. The doors have a push-button opener.",
+        "reverse": "Go out through the main entrance doors and follow the ramp down to the plaza."
+      }
+    },
+    {
+      "id": "lobby-doors",
+      "name": "Inner lobby doors",
+      "from": "main-entrance",
+      "to": "f1-west-junction",
+      "type": "door",
+      "direction": "bidirectional",
+      "lengthMeters": 8,
+      "stepFree": "confirmed",
+      "availability": "available",
+      "verification": { "status": "simulated", "source": "Fictional demo data" },
+      "instructions": {
+        "forward": "Go through the inner lobby doors and continue straight until the corridor meets a cross corridor.",
+        "reverse": "Leave the junction toward the entrance and go through the inner lobby doors."
+      }
+    },
+    {
+      "id": "west-to-stairwell",
+      "name": "Stairwell A corridor, Floor 1",
+      "from": "f1-west-junction",
+      "to": "f1-stairwell-a",
+      "type": "corridor",
+      "direction": "bidirectional",
+      "lengthMeters": 6,
+      "stepFree": "confirmed",
+      "availability": "available",
+      "verification": { "status": "simulated", "source": "Fictional demo data" },
+      "instructions": {
+        "forward": "Continue straight across the junction to the end of the short corridor, where the Stairwell A door is.",
+        "reverse": "Leave the stairwell door and walk along the short corridor until it meets the cross corridor."
+      }
+    },
+    {
+      "id": "main-corridor",
+      "name": "Main corridor, Floor 1",
+      "from": "f1-west-junction",
+      "to": "f1-east-junction",
+      "type": "corridor",
+      "direction": "bidirectional",
+      "lengthMeters": 25,
+      "stepFree": "confirmed",
+      "availability": "available",
+      "verification": { "status": "simulated", "source": "Fictional demo data" },
+      "instructions": {
+        "forward": "Take the long main corridor lined with bulletin boards and follow it until it ends at the next junction.",
+        "reverse": "Take the long main corridor lined with bulletin boards and follow it until you reach the junction with the drinking fountain."
+      }
+    },
+    {
+      "id": "east-to-elevator",
+      "name": "Elevator A corridor, Floor 1",
+      "from": "f1-east-junction",
+      "to": "f1-elevator-lobby",
+      "type": "corridor",
+      "direction": "bidirectional",
+      "lengthMeters": 10,
+      "stepFree": "confirmed",
+      "availability": "available",
+      "verification": { "status": "simulated", "source": "Fictional demo data" },
+      "instructions": {
+        "forward": "From the junction, take the corridor that leads to the Elevator A lobby.",
+        "reverse": "Leave the elevator lobby along its corridor until you reach the junction with the recycling bins."
+      }
+    },
+    {
+      "id": "east-to-room-105",
+      "name": "Room 105 doorway",
+      "from": "f1-east-junction",
+      "to": "room-105",
+      "type": "door",
+      "direction": "bidirectional",
+      "lengthMeters": 7,
+      "stepFree": "confirmed",
+      "availability": "available",
+      "verification": { "status": "simulated", "source": "Fictional demo data" },
+      "instructions": {
+        "forward": "From the junction, take the short side corridor to the second door, which is Room 105.",
+        "reverse": "Leave Room 105 and follow the short side corridor back to the junction."
+      }
+    },
+    {
+      "id": "east-exit-door",
+      "name": "East exit door (exit only)",
+      "from": "f1-east-junction",
+      "to": "plaza",
+      "type": "door",
+      "direction": "one_way",
+      "lengthMeters": 30,
+      "stepFree": "confirmed",
+      "availability": "available",
+      "verification": {
+        "status": "simulated",
+        "source": "Fictional demo data",
+        "notes": "Exit-only door: cannot be opened from outside, so it is one-way."
+      },
+      "instructions": {
+        "forward": "Push through the east exit door at the end of the cross corridor, then follow the outside path around the building back to the plaza."
+      }
+    },
+    {
+      "id": "stairwell-a-stairs",
+      "name": "Stairwell A stairs",
+      "from": "f1-stairwell-a",
+      "to": "f2-stairwell-a",
+      "type": "stairs",
+      "direction": "bidirectional",
+      "routingCost": 12,
+      "stepFree": "unsuitable",
+      "availability": "available",
+      "verification": { "status": "simulated", "source": "Fictional demo data" },
+      "instructions": {
+        "forward": "Go up the stairs to Floor 2: two flights with a landing between them, handrails on both sides. Leave through the Floor 2 door.",
+        "reverse": "Go down the stairs to Floor 1: two flights with a landing between them, handrails on both sides. Leave through the Floor 1 door."
+      }
+    },
+    {
+      "id": "elevator-a",
+      "name": "Elevator A",
+      "from": "f1-elevator-lobby",
+      "to": "f2-elevator-lobby",
+      "type": "elevator",
+      "direction": "bidirectional",
+      "routingCost": 30,
+      "stepFree": "confirmed",
+      "availability": "available",
+      "verification": {
+        "status": "simulated",
+        "source": "Fictional demo data",
+        "notes": "routingCost includes simulated waiting time."
+      },
+      "instructions": {
+        "forward": "Press the call button, enter Elevator A and select Floor 2. Wait for the Floor 2 announcement before leaving.",
+        "reverse": "Press the call button, enter Elevator A and select Floor 1. Wait for the Floor 1 announcement before leaving."
+      }
+    },
+    {
+      "id": "f2-stairwell-to-central",
+      "name": "Stairwell A corridor, Floor 2",
+      "from": "f2-stairwell-a",
+      "to": "f2-central-junction",
+      "type": "corridor",
+      "direction": "bidirectional",
+      "lengthMeters": 9,
+      "stepFree": "confirmed",
+      "availability": "available",
+      "verification": { "status": "simulated", "source": "Fictional demo data" },
+      "instructions": {
+        "forward": "Leave the stairwell and follow the corridor until it opens into the wide carpeted area.",
+        "reverse": "From the carpeted area, take the corridor that leads to the Stairwell A door."
+      }
+    },
+    {
+      "id": "f2-elevator-to-central",
+      "name": "Elevator A corridor, Floor 2",
+      "from": "f2-elevator-lobby",
+      "to": "f2-central-junction",
+      "type": "corridor",
+      "direction": "bidirectional",
+      "lengthMeters": 20,
+      "stepFree": "confirmed",
+      "availability": "available",
+      "verification": { "status": "simulated", "source": "Fictional demo data" },
+      "instructions": {
+        "forward": "Leave the elevator lobby and follow the corridor until it opens into the wide carpeted area.",
+        "reverse": "From the carpeted area, take the corridor that leads to the Elevator A lobby."
+      }
+    },
+    {
+      "id": "central-to-room-201",
+      "name": "Room 201 doorway",
+      "from": "f2-central-junction",
+      "to": "room-201",
+      "type": "door",
+      "direction": "bidirectional",
+      "lengthMeters": 6,
+      "stepFree": "confirmed",
+      "availability": "available",
+      "verification": { "status": "simulated", "source": "Fictional demo data" },
+      "instructions": {
+        "forward": "Cross the carpeted area to the door on the far side of the seating area. That door is Room 201.",
+        "reverse": "Leave Room 201 into the wide carpeted area."
+      }
+    },
+    {
+      "id": "annex-skybridge",
+      "name": "Skybridge to Annex",
+      "from": "f2-central-junction",
+      "to": "annex-reading-room",
+      "type": "bridge",
+      "direction": "bidirectional",
+      "lengthMeters": 35,
+      "stepFree": "unknown",
+      "availability": "unknown",
+      "verification": {
+        "status": "simulated",
+        "source": "Fictional demo data",
+        "notes": "Deliberately left unknown to demonstrate that unknown is never treated as step-free."
+      },
+      "instructions": {
+        "forward": "Follow the glass-walled skybridge to its end, then go through the doors into the Annex reading room.",
+        "reverse": "Leave the reading room through the skybridge doors and follow the skybridge back to the carpeted area."
+      }
+    }
+  ]
+}
