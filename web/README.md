@@ -38,7 +38,7 @@ This is a source-based visual adaptation. It has not been compared to a running 
 Install **Node.js 22 or later** (an LTS release is recommended), then reopen your terminal. From the folder where you keep projects:
 
 ```powershell
-git clone --branch Web-App-Version https://github.com/Not-Depth/Anchor.git
+git clone https://github.com/Not-Depth/Anchor.git
 cd Anchor/web
 npm start
 ```
@@ -49,12 +49,13 @@ If you already cloned Anchor, save your own changes before switching branches:
 
 ```powershell
 git fetch origin
-git switch Web-App-Version
+git switch main
+git pull --ff-only origin main
 cd web
 npm start
 ```
 
-If you downloaded a ZIP, choose the `Web-App-Version` branch on GitHub before downloading. Extract it, open a terminal in its `web` folder, and run `npm start`. Keep the surrounding repository folders: the server reads the native project's map.
+If you downloaded a ZIP, choose the `main` branch on GitHub before downloading. Extract it, open a terminal in its `web` folder, and run `npm start`. Keep the surrounding repository folders: the server reads the native project's map.
 
 If PowerShell blocks `npm.ps1`, use **`npm.cmd start`**. If port 5173 is occupied, use another port in PowerShell:
 
@@ -155,4 +156,4 @@ The resulting `web/dist/` can be served by any static HTTP host, including from 
 
 ## Team workflow
 
-Keep changes on `Web-App-Version` or a feature branch based on it, push to the shared repository, and review through a pull request before merging. Everyone runs their own local copy; there is no shared local server or database. A hosted deployment is optional and separate from this branch.
+Create feature branches from an up-to-date `main`, push to the shared repository, and review through a pull request before merging back into `main`. Everyone runs their own local copy; there is no shared local server or database. A hosted deployment is optional and separate from merging the code.
