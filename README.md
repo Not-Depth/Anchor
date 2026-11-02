@@ -1,5 +1,24 @@
 # UB Access Navigator — Milestone 1
 
+## Web version for Windows, macOS, and Linux
+
+The `web/` folder contains a browser version of Routes, landmark guidance, Settings, and a clearly labeled Nearby simulation. Install **Node.js 22 or later**, then run these commands from the repository root:
+
+```sh
+cd web
+npm start
+```
+
+Open **http://127.0.0.1:5173**. No Xcode, Docker, account, API key, or dependency installation is required to run the web app. Real LiDAR remains a native iPhone feature.
+
+See **[web/README.md](web/README.md)** for Windows troubleshooting, team setup, feature differences, test commands, and static hosting instructions. The web app uses the same fictional demo map as the native project.
+
+**This is a separately maintained browser companion, not a live SwiftUI preview.** Editing Swift screens or routing logic does not update the web app. Only the map JSON is shared. Its interface follows the native screen structure, but the browser executes JavaScript; native app testing still requires Xcode on a Mac. See [what is shared and what needs two updates](web/README.md#what-is-shared-and-what-needs-two-updates).
+
+---
+
+## Native iPhone version
+
 A native iPhone app (Swift, SwiftUI) with three tabs:
 
 - **Routes**: pick a starting point and destination. Review the route, then follow landmark-based steps that you confirm one at a time.
