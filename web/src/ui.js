@@ -3,66 +3,72 @@ export const escapeHTML = (value) =>
     /[&<>"']/g,
     (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char],
   );
-
-export function connectionDetails(c) {
-  const suitability = {
+export const typeName = (type) =>
+  ({
+    corridor: 'Corridor',
+    door: 'Door',
+    stairs: 'Stairs',
+    ramp: 'Ramp',
+    elevator: 'Elevator',
+    bridge: 'Bridge',
+  })[type];
+export const suitabilityName = (value) =>
+  ({
     confirmed: 'Step-free: confirmed',
-    unsuitable: 'Not suitable for step-free travel',
-    unknown: 'Step-free suitability unknown',
-  };
-  return `${c.type} · ${c.lengthMeters == null ? 'Length not recorded' : `${c.lengthMeters} m recorded (simulated)`} · ${suitability[c.stepFree]} · ${c.availability === 'unknown' ? 'Availability unknown' : c.availability}`;
+    unsuitable: 'Step-free: not suitable',
+    unknown: 'Step-free: unknown',
+  })[value];
+export function connectionDetails(c) {
+  return `${typeName(c.type)}: ${c.name}\n${c.lengthMeters == null ? 'Length not recorded' : `Recorded length: ${c.lengthMeters} m (simulated)`}\n${suitabilityName(c.stepFree)}\n${c.availability === 'unknown' ? 'Availability unknown' : c.availability === 'unavailable' ? 'Unavailable' : 'Available'}`;
 }
 
-export function renderMap(container, map, route, currentID) {
-  const used = new Set(route?.ok ? route.legs.map((leg) => leg.connection.id) : []);
+// Follow RouteSchematicView.swift: visited floors, numbered stops, dashed route,
+// and an equivalent text itinerary. This is still a separate browser renderer.
+export function renderMap(container, map, route) {
+  const used = new Set(route.legs.map((leg) => leg.connection.id));
   const landmarks = new Map(map.landmarks.map((landmark) => [landmark.id, landmark]));
-  const visited = new Set(route?.ok ? [route.start.id, ...route.legs.map((leg) => leg.to.id)] : []);
+  const visited = [route.start, ...route.legs.map((leg) => leg.to)];
+  const floorIDs = [...new Set(visited.map((landmark) => landmark.floorID))];
   const point = (landmark) => ({
-    x: 32 + landmark.schematic.x * 280,
-    y: 36 + landmark.schematic.y * 250,
+    x: 24 + landmark.schematic.x * 352,
+    y: 24 + landmark.schematic.y * 172,
   });
-  container.innerHTML = [...map.floors]
-    .sort((a, b) => a.level - b.level)
-    .map((floor, floorID) => {
-      const nodes = map.landmarks.filter(
-        (landmark) => landmark.floorID === floor.id && landmark.schematic,
-      );
-      const lines = map.connections
-        .flatMap((c) => {
-          const a = landmarks.get(c.from),
-            b = landmarks.get(c.to);
-          if (a.floorID !== floor.id || b.floorID !== floor.id || !a.schematic || !b.schematic)
-            return [];
-          const start = point(a),
-            end = point(b);
-          // Parallel ramp/stair connections get a small offset so neither hides the other.
-          const offset = c.type === 'ramp' ? 9 : 0;
-          return [
-            {
+  container.innerHTML =
+    floorIDs
+      .map((floorID) => {
+        const floor = map.floors.find((f) => f.id === floorID);
+        const lines = map.connections
+          .map((c) => {
+            const a = landmarks.get(c.from),
+              b = landmarks.get(c.to);
+            if (a.floorID !== floorID || b.floorID !== floorID || !a.schematic || !b.schematic)
+              return null;
+            const start = point(a),
+              end = point(b);
+            return {
               active: used.has(c.id),
-              markup: `<path d="M${start.x + offset},${start.y} L${end.x + offset},${end.y}" class="map-path ${used.has(c.id) ? 'active' : ''} ${c.availability === 'unavailable' ? 'unavailable' : ''}" ${c.direction === 'one_way' ? `marker-end="url(#arrow-${floorID})"` : ''}/>`,
-            },
-          ];
-        })
-        .sort((a, b) => Number(a.active) - Number(b.active))
-        .map((line) => line.markup)
-        .join('');
-      const dots = nodes
-        .map((landmark) => {
-          const p = point(landmark);
-          const label = landmark.name
-            .replace(/ \(.*\)/, '')
-            .replace(', Floor 1', '')
-            .replace(', Floor 2', '')
-            .replace('Stairwell A door', 'Stairs A')
-            .replace('Elevator A lobby', 'Elevator A')
-            .replace('Main Entrance lobby', 'Entrance')
-            .replace('Annex reading room', 'Annex');
-          const alignment = landmark.schematic.x > 0.8 ? 'end' : 'start';
-          return `<g><circle cx="${p.x}" cy="${p.y}" r="${landmark.id === currentID ? 9 : 6}" class="map-node ${visited.has(landmark.id) ? 'active' : ''}"/><text x="${p.x + (alignment === 'end' ? -10 : 10)}" y="${p.y - 12}" text-anchor="${alignment}">${escapeHTML(label)}</text></g>`;
-        })
-        .join('');
-      return `<div class="floor"><div class="floor-title"><strong>${escapeHTML(floor.name)}</strong><span>${nodes.length} landmarks</span></div><svg viewBox="0 0 350 310" focusable="false"><defs><pattern id="grid-${floorID}" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.8" fill="#d8e1d9"/></pattern><marker id="arrow-${floorID}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M0 0L10 5L0 10" fill="#758c81"/></marker></defs><rect width="350" height="310" fill="url(#grid-${floorID})"/>${lines}${dots}</svg></div>`;
-    })
-    .join('');
+              markup: `<path d="M${start.x},${start.y} L${end.x},${end.y}" class="map-path ${used.has(c.id) ? 'active' : ''}"/>`,
+            };
+          })
+          .filter(Boolean)
+          .sort((a, b) => Number(a.active) - Number(b.active))
+          .map((line) => line.markup)
+          .join('');
+        const dots = map.landmarks
+          .filter((l) => l.floorID === floorID && l.schematic)
+          .map((landmark) => {
+            const p = point(landmark),
+              order = visited.findIndex((l) => l.id === landmark.id);
+            return `<circle cx="${p.x}" cy="${p.y}" r="${order < 0 ? 4 : 11}" class="map-node ${order < 0 ? '' : 'active'}"/>${order < 0 ? '' : `<text x="${p.x}" y="${p.y}" class="map-number">${order + 1}</text>`}`;
+          })
+          .join('');
+        return `<div class="floor"><h3>${escapeHTML(floor.name)}</h3><svg aria-hidden="true" viewBox="0 0 400 220" focusable="false">${lines}${dots}</svg><p class="sr-only">Route passes ${escapeHTML(
+          visited
+            .filter((l) => l.floorID === floorID)
+            .map((l) => l.name)
+            .join(', then '),
+        )}.</p></div>`;
+      })
+      .join('') +
+    '<p class="map-legend">Numbered circles are the route’s landmarks in order. Dashed line: route. Thin line: other connections. Floor changes are not drawn.</p>';
 }

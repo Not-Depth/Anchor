@@ -2,11 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#153f38" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f2f2f7" />
     <meta
       name="description"
-      content="Anchor's fictional indoor navigation demo. Explore routes, step-free preferences, and landmark-based guidance in your browser."
+      content="A browser companion to the UB Access Navigator iPhone demo. Uses the shared fictional map; does not execute Swift code."
     />
     <title>Anchor · Access Navigator</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
@@ -15,274 +15,292 @@
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to main content</a>
-    <header class="site-header">
-      <a class="brand" href="#routes" aria-label="Anchor home">
-        <span class="brand-mark" aria-hidden="true"
-          ><svg viewBox="0 0 32 32">
-            <circle cx="16" cy="8" r="3" />
-            <path d="M16 11v16M10 15h12M5 19c0 10 22 10 22 0M5 19l-2 4M27 19l2 4" /></svg
-        ></span>
-        <span>anchor<span class="brand-caption">ACCESS NAVIGATOR</span></span>
-      </a>
-      <nav aria-label="Main navigation">
-        <a href="#routes" aria-current="page">Routes</a>
-        <a href="#nearby">Nearby <span class="nav-tag">DEMO</span></a>
-        <a href="#settings">Settings</a>
-      </nav>
-      <span class="browser-badge"><span aria-hidden="true">●</span> Web edition</span>
-    </header>
-
-    <main id="main" tabindex="-1">
-      <div class="demo-banner">
-        <span class="demo-label">FICTIONAL DEMO</span>
-        <p id="disclaimer">
-          Demo Hall is an invented building. Routes, distances, and accessibility details are
-          simulated. Do not use this demo for real navigation.
-        </p>
-      </div>
-      <div id="loading" role="status" class="loading">Loading Demo Hall…</div>
-      <div id="load-error" class="error-panel" role="alert" hidden>
-        <h1>We couldn’t load the map</h1>
-        <p id="load-error-message"></p>
-        <button id="retry" class="button primary">Try again</button>
-      </div>
-      <div id="app" hidden>
-        <section id="routes-view" aria-labelledby="routes-heading">
-          <div class="page-heading">
-            <div>
-              <p class="eyebrow">A LITTLE CLARITY, EVERY STEP</p>
-              <h1 id="routes-heading" tabindex="-1">Find your way.</h1>
-              <p>Choose your route. Follow familiar landmarks. Go at your pace.</p>
-            </div>
-            <span class="location-label">Demo Hall <span>Fictional building · 2 floors</span></span>
-          </div>
-          <div class="route-layout">
-            <aside class="planner-panel">
-              <h2>Where are you headed?</h2>
-              <p class="muted">Plan a route through our demo building.</p>
-              <form id="route-form">
-                <label for="start">Starting point</label
-                ><select id="start" name="start" required></select>
-                <div class="route-connector" aria-hidden="true">·<br />·<br />·</div>
-                <label for="destination">Destination</label
-                ><select id="destination" name="destination" required></select>
-                <label class="check-row route-check"
-                  ><input
-                    type="checkbox"
-                    id="route-step-free"
-                    data-setting="requireStepFree"
-                  /><span
-                    ><strong>Step-free route</strong
-                    ><small>Only confirmed ramps, lifts, and level connections.</small></span
-                  ></label
-                >
-                <button class="button primary full" type="submit">
-                  Find a route <span aria-hidden="true">↗</span>
-                </button>
-              </form>
-              <p id="route-notice" class="notice" role="status"></p>
-              <div class="planner-note">
-                <span class="small-icon" aria-hidden="true">i</span>
-                <p>
-                  <strong>You’re in control.</strong> This demo doesn’t track your location. You
-                  confirm each landmark yourself.
-                </p>
-              </div>
-              <div class="scenario-box">
-                <p class="eyebrow">TRY A DEMO</p>
-                <button class="scenario" data-scenario="step-free">
-                  A route without stairs <span aria-hidden="true">→</span></button
-                ><button class="scenario" data-scenario="outage">
-                  What if the lift is closed? <span aria-hidden="true">→</span>
-                </button>
-              </div>
-            </aside>
-            <div class="route-workspace">
-              <section class="map-panel" aria-labelledby="map-heading">
-                <div class="panel-heading">
-                  <div>
-                    <p class="eyebrow">GET YOUR BEARINGS</p>
-                    <h2 id="map-heading">A look around Demo Hall</h2>
-                  </div>
-                  <span class="pill neutral">Not to scale</span>
-                </div>
-                <div id="map" class="floor-maps" aria-hidden="true"></div>
-                <div class="map-legend">
-                  <span><i class="legend-line"></i>Connection</span
-                  ><span><i class="legend-line selected"></i>Your route</span
-                  ><span><i class="legend-dot"></i>Landmark</span
-                  ><span>Floor changes are listed in your steps.</span>
-                </div>
-                <p class="sr-only">
-                  The schematic is decorative. Every route connection, floor change, and instruction
-                  is described in the route details below.
-                </p>
-              </section>
-              <section id="result" class="result-panel" aria-label="Route result">
-                <div class="empty-state">
-                  <span class="empty-icon" aria-hidden="true">↗</span>
-                  <div>
-                    <h2>Your next step starts here</h2>
-                    <p>Pick two places to see your route and landmark-by-landmark directions.</p>
-                  </div>
-                </div>
-              </section>
-            </div>
-          </div>
+    <div class="app-shell">
+      <main id="main" tabindex="-1">
+        <div id="loading" role="status" class="status-screen">Loading map…</div>
+        <section id="load-error" class="status-screen" role="alert" hidden>
+          <h1>Map could not be loaded</h1>
+          <p id="load-error-message"></p>
+          <button id="retry" class="button primary">Try again</button>
         </section>
-
-        <section id="nearby-view" aria-labelledby="nearby-heading" hidden>
-          <div class="page-heading">
-            <div>
-              <p class="eyebrow">EXPLORE THE EXPERIENCE</p>
-              <h1 id="nearby-heading" tabindex="-1">Nearby, in simulation.</h1>
-              <p>Try distance alerts using a value you control.</p>
-            </div>
-            <span class="pill amber">Simulation only</span>
-          </div>
-          <div class="nearby-layout">
-            <section class="sensor-panel">
-              <span class="sensor-label">SIMULATED DISTANCE</span>
-              <div class="distance-display">
-                <span id="distance-reading">2.00</span><span id="distance-unit">m</span>
-              </div>
-              <p id="sensor-state">Simulation stopped</p>
-              <div class="sensor-rings" aria-hidden="true">
-                <span></span><span></span><span></span><i></i>
-              </div>
-              <button id="simulation-toggle" class="button primary">Start simulation</button>
-            </section>
-            <section class="control-panel">
-              <h2>Try a nearby alert</h2>
-              <p>
-                This browser app does not access a camera or measure objects. Real depth sensing is
-                available only in the native app on a supported LiDAR iPhone.
-              </p>
-              <label for="distance"
-                >Simulated distance
-                <output id="distance-value" for="distance">2.00 m</output></label
-              ><input id="distance" type="range" min="0.1" max="5" step="0.05" value="2" />
-              <div class="range-labels"><span>0.1 m</span><span>5 m</span></div>
-              <label class="check-row"
-                ><input id="unreliable" type="checkbox" /><span
-                  ><strong>Simulate lost readings</strong
-                  ><small>Test what happens when reliable depth data stops.</small></span
-                ></label
+        <div id="app" hidden>
+          <section id="routes-view" aria-labelledby="routes-heading">
+            <header class="large-header"><h1 id="routes-heading" tabindex="-1">Routes</h1></header>
+            <form id="route-form" class="form-content">
+              <section class="group demo-banner">
+                <h2><span class="warning-icon" aria-hidden="true">⚠</span> Fictional demo data</h2>
+                <p id="disclaimer"></p>
+                <p class="outage-notice" hidden></p>
+              </section>
+              <section class="form-section" aria-labelledby="places-heading">
+                <h2 id="places-heading" class="section-label">Where are you?</h2>
+                <div class="group">
+                  <button
+                    id="start-picker"
+                    type="button"
+                    class="picker-row"
+                    aria-label="Starting point, Not selected"
+                  >
+                    <span>Starting point</span
+                    ><span class="picker-value" id="start-value">Not selected</span
+                    ><span class="chevron" aria-hidden="true">›</span>
+                  </button>
+                  <button
+                    id="destination-picker"
+                    type="button"
+                    class="picker-row"
+                    aria-label="Destination, Not selected"
+                  >
+                    <span>Destination</span
+                    ><span class="picker-value" id="destination-value">Not selected</span
+                    ><span class="chevron" aria-hidden="true">›</span>
+                  </button>
+                </div>
+                <p class="section-footer">
+                  Choose the landmark you are at now. You'll confirm it before guidance starts; the
+                  app does not track your position indoors.
+                </p>
+              </section>
+              <section class="form-section">
+                <div class="group">
+                  <label class="switch-row"
+                    ><span>Step-free route</span
+                    ><input
+                      id="route-step-free"
+                      type="checkbox"
+                      role="switch"
+                      data-setting="requireStepFree"
+                  /></label>
+                </div>
+                <p id="step-free-description" class="section-footer">
+                  The shortest route may include stairs.
+                </p>
+              </section>
+              <button
+                id="find-route"
+                class="button primary full"
+                type="submit"
+                disabled
+                aria-describedby="search-hint"
               >
-              <p>
-                Alert threshold: <strong id="threshold-label">1 m</strong>. Change audio, vibration,
-                and distance in <a href="#settings">Settings</a>.
+                Find route
+              </button>
+              <p id="search-hint" class="section-footer">
+                Choose a starting point and destination first.
               </p>
-              <div class="alert-log">
-                <p class="eyebrow">LATEST SIMULATED EVENT</p>
-                <p id="nearby-event" role="status" aria-live="polite">
+              <p id="route-notice" class="section-footer" role="status"></p>
+            </form>
+          </section>
+          <section id="picker-view" aria-labelledby="picker-heading" hidden>
+            <header class="navigation-bar">
+              <button class="back-button" data-go="routes">
+                <span aria-hidden="true">‹</span> Routes
+              </button>
+              <h1 id="picker-heading" tabindex="-1">Starting point</h1>
+            </header>
+            <div id="picker-options" class="form-content"></div>
+          </section>
+          <section id="route-view" aria-labelledby="result-heading" hidden>
+            <header class="navigation-bar">
+              <button class="back-button" data-go="routes">
+                <span aria-hidden="true">‹</span> Routes
+              </button>
+              <h1 id="result-heading" tabindex="-1">Route</h1>
+            </header>
+            <div id="result" class="form-content"></div>
+          </section>
+          <section id="guidance-view" aria-labelledby="guidance-heading" hidden>
+            <header class="navigation-bar">
+              <button id="end-guidance" class="text-button">End route</button>
+              <h1 id="guidance-heading" tabindex="-1"></h1>
+            </header>
+            <div id="guidance-content" class="plain-content"></div>
+          </section>
+          <section id="nearby-view" aria-labelledby="nearby-heading" hidden>
+            <header class="large-header"><h1 id="nearby-heading" tabindex="-1">Nearby</h1></header>
+            <div class="plain-content">
+              <p class="experimental-notice">
+                <span class="warning-icon" aria-hidden="true">⚠</span
+                ><span
+                  >Experimental. Readings are approximate and do not identify objects. They can miss
+                  glass, thin poles, overhangs and drop-offs. Keep using your usual mobility
+                  aids.</span
+                >
+              </p>
+              <section class="unavailable-state">
+                <svg class="sensor-icon" viewBox="0 0 32 32" aria-hidden="true">
+                  <path
+                    d="M5 7a16 16 0 0 0 0 18M10 11a9 9 0 0 0 0 10M27 7a16 16 0 0 1 0 18M22 11a9 9 0 0 1 0 10"
+                  />
+                  <circle cx="16" cy="16" r="3" />
+                </svg>
+                <h2>Not available on this device</h2>
+                <p>
+                  This browser cannot run the iPhone app's ARKit LiDAR depth sensing. Routes work
+                  normally. No camera or distance sensor is used here.
+                </p>
+              </section>
+              <details id="simulation-details" class="simulation-disclosure">
+                <summary>Try simulated readings</summary>
+                <p class="simulation-notice">
+                  <strong>Simulation only.</strong> You control the distance below. These are not
+                  measurements of your surroundings.
+                </p>
+                <section class="reading-card" aria-label="Simulated distance reading">
+                  <h3>Nearest surface, center of view</h3>
+                  <div class="distance-display">
+                    <span id="distance-reading">—</span><span id="distance-unit"></span>
+                  </div>
+                  <p id="sensor-state" class="secondary">Simulation stopped</p>
+                </section>
+                <label class="range-label" for="distance"
+                  >Simulated distance
+                  <output id="distance-value" for="distance">2.00 m</output></label
+                ><input id="distance" type="range" min="0.1" max="5" step="0.05" value="2" />
+                <label class="switch-row"
+                  ><span>Simulate lost readings</span
+                  ><input id="unreliable" type="checkbox" role="switch"
+                /></label>
+                <p id="alert-summary" class="section-footer"></p>
+                <p class="section-footer">
+                  Simulated alert threshold: <span id="threshold-label">1 m</span>.
+                </p>
+                <button id="simulation-toggle" class="button primary full">Start simulation</button>
+                <p id="nearby-event" class="section-footer" role="status">
                   Start the simulation, then move the slider.
                 </p>
-              </div>
-              <p class="muted">
-                This tests the interface and alert behavior only. It cannot detect obstacles or
-                validate real-world navigation.
-              </p>
-            </section>
-          </div>
-        </section>
-
-        <section id="settings-view" aria-labelledby="settings-heading" hidden>
-          <div class="page-heading">
-            <div>
-              <p class="eyebrow">MAKE IT WORK FOR YOU</p>
-              <h1 id="settings-heading" tabindex="-1">Your preferences.</h1>
-              <p>Independent controls, saved in this browser when storage is available.</p>
+              </details>
             </div>
-          </div>
-          <div class="settings-grid">
-            <section class="settings-panel">
-              <h2>Routes &amp; guidance</h2>
-              <label class="check-row"
-                ><input type="checkbox" data-setting="requireStepFree" /><span
-                  ><strong>Step-free routes</strong
-                  ><small
-                    >Exclude stairs and connections whose step-free suitability is unknown.</small
-                  ></span
-                ></label
-              ><label class="check-row"
-                ><input type="checkbox" data-setting="spokenDirections" /><span
-                  ><strong>Spoken directions</strong
-                  ><small
-                    >Read each guidance step aloud. Leave off if you prefer your screen
-                    reader.</small
-                  ></span
-                ></label
-              >
-              <p id="speech-support" class="muted"></p>
-            </section>
-            <section class="settings-panel">
-              <h2>Nearby simulation</h2>
-              <label class="check-row"
-                ><input type="checkbox" data-setting="nearbyAudioAlerts" /><span
-                  ><strong>Audio alerts</strong
-                  ><small>Speak simulated proximity and lost-reading alerts.</small></span
-                ></label
-              ><label class="check-row"
-                ><input type="checkbox" data-setting="nearbyHapticAlerts" /><span
-                  ><strong>Vibration alerts</strong
-                  ><small
-                    >Use browser vibration where supported. Most laptops cannot vibrate.</small
-                  ></span
-                ></label
-              >
-              <p id="vibration-support" class="muted"></p>
-              <label for="alert-distance">Alert distance</label
-              ><select id="alert-distance" data-setting="nearbyAlertDistance">
-                <option value="0.5">0.5 m</option>
-                <option value="0.75">0.75 m</option>
-                <option value="1">1 m</option>
-                <option value="1.5">1.5 m</option>
-                <option value="2">2 m</option>
-              </select>
-            </section>
-            <section class="settings-panel">
-              <div class="panel-heading">
-                <h2>Demo conditions</h2>
-                <span class="pill amber">Fictional</span>
-              </div>
-              <label class="check-row"
-                ><input type="checkbox" data-setting="simulateElevatorOutage" /><span
-                  ><strong>Simulate elevator outage</strong
-                  ><small
-                    >Mark all elevators unavailable. Step-free routing will explain the blockage
-                    rather than offer stairs.</small
-                  ></span
-                ></label
-              >
-              <p class="muted">
-                Changing routing preferences ends any active guidance so you can review a fresh
-                route.
-              </p>
-            </section>
-            <section class="settings-panel about-panel">
-              <p class="eyebrow">ABOUT THIS EDITION</p>
-              <h2>A shared place to test.</h2>
-              <p>
-                Anchor Web brings the navigation demo to Windows, macOS, and Linux. It uses the
-                iPhone project’s fictional map and authored instructions.
-              </p>
-              <p>
-                No account, location tracking, or backend is needed. Speech availability depends on
-                your browser and operating system; a voice may use an online service.
-              </p>
-            </section>
-          </div>
-          <p id="settings-status" class="notice" role="status"></p>
-        </section>
+          </section>
+          <section id="settings-view" aria-labelledby="settings-heading" hidden>
+            <header class="large-header">
+              <h1 id="settings-heading" tabindex="-1">Settings</h1>
+            </header>
+            <div class="form-content">
+              <section class="form-section">
+                <h2 class="section-label">Routes</h2>
+                <div class="group">
+                  <label class="switch-row"
+                    ><span>Step-free routes only</span
+                    ><input type="checkbox" role="switch" data-setting="requireStepFree"
+                  /></label>
+                </div>
+                <p class="section-footer">
+                  Excludes stairs and any connection not confirmed step-free. If no such route
+                  exists, the app says so instead of offering stairs.
+                </p>
+              </section>
+              <section class="form-section">
+                <h2 class="section-label">Spoken directions</h2>
+                <div class="group">
+                  <label class="switch-row"
+                    ><span>Speak directions</span
+                    ><input type="checkbox" role="switch" data-setting="spokenDirections" /></label
+                  ><button id="test-voice" class="action-row">Test voice</button>
+                </div>
+                <p class="section-footer">
+                  Browser speech is optional. Leave it off if you prefer your screen reader;
+                  browsers cannot detect VoiceOver or other screen readers.
+                </p>
+                <p id="speech-support" class="section-footer"></p>
+              </section>
+              <section class="form-section">
+                <h2 class="section-label">Nearby alerts (experimental)</h2>
+                <div class="group">
+                  <label class="switch-row"
+                    ><span>Audio alerts</span
+                    ><input type="checkbox" role="switch" data-setting="nearbyAudioAlerts" /></label
+                  ><label class="switch-row"
+                    ><span>Haptic alerts</span
+                    ><input
+                      type="checkbox"
+                      role="switch"
+                      data-setting="nearbyHapticAlerts" /></label
+                  ><label class="select-row" for="alert-distance"
+                    ><span>Alert distance</span
+                    ><select id="alert-distance" data-setting="nearbyAlertDistance">
+                      <option value="0.5">0.5 m</option>
+                      <option value="0.75">0.75 m</option>
+                      <option value="1">1 m</option>
+                      <option value="1.5">1.5 m</option>
+                      <option value="2">2 m</option>
+                    </select></label
+                  >
+                </div>
+                <p class="section-footer">
+                  In this browser, alerts apply only to the optional Nearby simulation. No objects
+                  or hazards are detected. Keep using your usual mobility aids.
+                </p>
+                <p id="vibration-support" class="section-footer"></p>
+              </section>
+              <section class="form-section">
+                <h2 class="section-label">Demo simulation</h2>
+                <div class="group">
+                  <label class="switch-row"
+                    ><span>Simulate elevator outage</span
+                    ><input type="checkbox" role="switch" data-setting="simulateElevatorOutage"
+                  /></label>
+                </div>
+                <p class="section-footer">
+                  Marks every elevator in the fictional demo map as unavailable, to show how the app
+                  handles a missing step-free route. Does not reflect any real elevator.
+                </p>
+              </section>
+              <section class="form-section">
+                <h2 class="section-label">Map data</h2>
+                <div class="group">
+                  <dl class="labeled-list">
+                    <div>
+                      <dt>Map</dt>
+                      <dd id="map-name"></dd>
+                    </div>
+                    <div>
+                      <dt>Status</dt>
+                      <dd>Fictional demo data</dd>
+                    </div>
+                  </dl>
+                  <p id="map-disclaimer" class="map-disclaimer"></p>
+                </div>
+              </section>
+              <p id="settings-status" class="section-footer" role="status"></p>
+              <p class="edition-note">UB Access Navigator · Web companion</p>
+            </div>
+          </section>
+        </div>
+        <noscript
+          ><p class="status-screen">Enable JavaScript to use the route planner.</p></noscript
+        >
+      </main>
+      <nav id="tab-bar" class="tab-bar" aria-label="Main navigation">
+        <a href="#routes" data-tab="routes" aria-current="page"
+          ><svg viewBox="0 0 28 28" aria-hidden="true">
+            <path d="m3 6 7-3 8 3 7-3v19l-7 3-8-3-7 3ZM10 3v19M18 6v19" /></svg
+          ><span>Routes</span></a
+        >
+        <a href="#nearby" data-tab="nearby"
+          ><svg viewBox="0 0 28 28" aria-hidden="true">
+            <circle cx="14" cy="14" r="2" />
+            <path
+              d="M9 9a7 7 0 0 0 0 10M19 9a7 7 0 0 1 0 10M5 5a13 13 0 0 0 0 18M23 5a13 13 0 0 1 0 18"
+            /></svg
+          ><span>Nearby</span></a
+        >
+        <a href="#settings" data-tab="settings"
+          ><svg viewBox="0 0 28 28" aria-hidden="true">
+            <path
+              d="m11 3 6 0 1 4 3 2 4 0 1 6-3 2-1 3 1 3-5 3-3-3-3 0-3 2-4-4 2-3-1-3-3-2 2-5 4 0 2-2Z"
+            />
+            <circle cx="14" cy="14" r="4" /></svg
+          ><span>Settings</span></a
+        >
+      </nav>
+    </div>
+    <dialog id="end-route-dialog" aria-labelledby="end-route-title">
+      <div class="dialog-card">
+        <h2 id="end-route-title">End this route?</h2>
+        <button id="confirm-end-route" class="destructive action-row">End route</button
+        ><button id="keep-going" class="action-row">Keep going</button>
       </div>
-      <noscript
-        ><p class="error-panel">Enable JavaScript to use Anchor’s route planner.</p></noscript
-      >
-    </main>
-    <footer>
-      <span>anchor <span class="footer-divider">/</span> UB Access Navigator</span
-      ><span>A fictional demo. A more accessible starting point.</span>
-    </footer>
+    </dialog>
   </body>
 </html>

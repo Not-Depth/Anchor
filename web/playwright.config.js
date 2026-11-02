@@ -1,5 +1,9 @@
 import { defineConfig } from '@playwright/test';
 
+// Keep automated tests separate from a teammate's running development preview.
+const testPort = process.env.ANCHOR_TEST_PORT ?? '5175';
+const testURL = `http://127.0.0.1:${testPort}`;
+
 export default defineConfig({
   testDir: './tests/browser',
   fullyParallel: true,
@@ -7,7 +11,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL: testURL,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     channel: process.platform === 'win32' ? 'msedge' : undefined,
@@ -21,7 +25,8 @@ export default defineConfig({
   ],
   webServer: {
     command: 'node scripts/server.mjs --built',
-    url: 'http://127.0.0.1:5173',
+    url: testURL,
+    env: { PORT: testPort },
     reuseExistingServer: false,
   },
 });

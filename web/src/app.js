@@ -3,7 +3,8 @@ import { planRoute } from './core/routing.js';
 import { guidanceSteps, moveStep } from './core/guidance.js';
 import { loadSettings, saveSettings } from './core/settings.js';
 import { ProximityPolicy } from './core/proximity.js';
-import { escapeHTML as html, renderMap, connectionDetails } from './ui.js';
+import { escapeHTML as html, renderMap } from './ui.js';
+import { routeSummary, guidanceContent } from './views.js';
 
 const $ = (selector) => document.querySelector(selector);
 const all = (selector) => document.querySelectorAll(selector);
@@ -16,15 +17,19 @@ try {
 const settings = loadSettings(storage);
 const state = {
   map: null,
+  startID: '',
+  destinationID: '',
   route: null,
   steps: null,
   step: 0,
-  tab: 'routes',
+  screen: 'routes',
+  speechPaused: false,
   simulation: null,
   policy: null,
 };
 const speechSupported = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
 const vibrationSupported = typeof navigator.vibrate === 'function';
+const dialog = $('#end-route-dialog');
 
 function stopSpeech() {
   if (speechSupported) window.speechSynthesis.cancel();
@@ -36,70 +41,143 @@ function speak(text) {
   utterance.lang = 'en-US';
   window.speechSynthesis.speak(utterance);
 }
-
+function speakStep() {
+  const step = state.steps[state.step];
+  speak(step.instruction + (step.cue ? ` Arrival cue: ${step.cue}` : ''));
+}
 function currentMap() {
   return withElevatorOutage(state.map, settings.simulateElevatorOutage);
 }
-function updateMap() {
-  renderMap($('#map'), currentMap(), state.route, state.steps?.[state.step]?.landmarkID);
+function canSearch() {
+  return Boolean(state.startID && state.destinationID && state.startID !== state.destinationID);
 }
-function focusResult() {
-  $('#result-heading')?.focus();
+
+function updateSelections() {
+  for (const [key, title] of [
+    ['start', 'Starting point'],
+    ['destination', 'Destination'],
+  ]) {
+    const name =
+      state.map.landmarks.find((landmark) => landmark.id === state[`${key}ID`])?.name ??
+      'Not selected';
+    $(`#${key}-value`).textContent = name;
+    $(`#${key}-picker`).setAttribute('aria-label', `${title}, ${name}`);
+  }
+  $('#find-route').disabled = !canSearch();
+  $('#search-hint').textContent =
+    !state.startID || !state.destinationID
+      ? 'Choose a starting point and destination first.'
+      : state.startID === state.destinationID
+        ? 'Starting point and destination are the same.'
+        : 'Shows a summary of the route before guidance starts.';
+}
+
+function renderPicker(kind) {
+  const key = kind === 'start' ? 'canStartHere' : 'isDestination';
+  $('#picker-heading').textContent = kind === 'start' ? 'Starting point' : 'Destination';
+  const option = (id, name) =>
+    `<label class="option-row"><span>${html(name)}</span><input type="radio" name="landmark" value="${html(id)}" ${state[`${kind}ID`] === id ? 'checked' : ''}></label>`;
+  $('#picker-options').innerHTML =
+    `<div class="group">${option('', 'Not selected')}</div>` +
+    [...state.map.floors]
+      .sort((a, b) => a.level - b.level)
+      .map((floor) => {
+        const choices = state.map.landmarks.filter(
+          (landmark) => landmark.floorID === floor.id && landmark[key],
+        );
+        return choices.length
+          ? `<section class="form-section"><h2 class="section-label">${html(floor.name)}</h2><div class="group">${choices.map((landmark) => option(landmark.id, landmark.name)).join('')}</div></section>`
+          : '';
+      })
+      .join('');
+  $('#picker-options').setAttribute('role', 'radiogroup');
+  $('#picker-options').setAttribute('aria-labelledby', 'picker-heading');
 }
 
 function renderRoute() {
-  const route = state.route;
-  updateMap();
-  if (!route) {
-    $('#result').innerHTML =
-      '<div class="empty-state"><span class="empty-icon" aria-hidden="true">↗</span><div><h2>Your next step starts here</h2><p>Pick two places to see your route and landmark-by-landmark directions.</p></div></div>';
-    return;
-  }
-  if (!route.ok) {
-    $('#result').innerHTML =
-      `<p class="eyebrow">LET’S CHECK THAT ROUTE</p><h2 id="result-heading" tabindex="-1">${route.reason === 'same_location' || route.reason === 'unknown_landmark' ? 'Check your locations' : 'No suitable route found'}</h2><p class="warning">${html(route.explanation)}</p><p class="muted">Your preferences are kept as selected. Review the places or demo conditions to try another route.</p>`;
-    return;
-  }
-  const routeKind = route.requireStepFree
-    ? 'Step-free route'
-    : route.usesStairs
-      ? 'Includes stairs'
-      : 'Route found';
-  $('#result').innerHTML =
-    `<span class="pill ${route.usesStairs ? 'amber' : 'neutral'}">${routeKind}</span><h2 id="result-heading" tabindex="-1" class="result-title">${html(route.start.name)} → ${html(route.destination.name)}</h2><p class="route-summary">Follow the authored landmarks and confirm each arrival. All route data is fictional.</p><div class="metrics"><div><strong>${route.legs.length} connections</strong><span>One at a time</span></div><div><strong>${route.recordedLengthMeters} m recorded</strong><span>Simulated lengths only</span></div><div><strong>${route.legsWithUnknownLength} unrecorded</strong><span>Connections without a length</span></div></div>${route.warnings.length ? `<div class="warning"><strong>Before you go</strong><ul>${route.warnings.map((warning) => `<li>${html(warning)}</li>`).join('')}</ul></div>` : ''}<button id="start-guidance" class="button primary">Start guidance <span aria-hidden="true">→</span></button><details><summary class="details-toggle">Review all route steps</summary><ol class="steps">${route.legs.map((leg) => `<li><h3>${html(leg.to.name)}</h3><p>${html(leg.instruction)}</p><p class="arrival-cue">Arrival cue: ${html(leg.to.arrivalCue)}</p><small>${html(connectionDetails(leg.connection))}</small></li>`).join('')}</ol></details>`;
+  state.route = planRoute(
+    currentMap(),
+    state.startID,
+    state.destinationID,
+    settings.requireStepFree,
+  );
+  $('#result').innerHTML = routeSummary(state.route, state.map, settings);
+  if (state.route.ok) renderMap($('#map'), currentMap(), state.route);
 }
 
 function renderGuidance(announce = true) {
-  const step = state.steps[state.step];
-  const finished = !step.confirm;
-  updateMap();
-  $('#result').innerHTML =
-    `<p class="eyebrow">${finished ? 'DESTINATION CONFIRMED' : 'ONE LANDMARK AT A TIME'}</p><h2 id="result-heading" tabindex="-1">${finished ? 'You’ve arrived.' : `Step ${state.step + 1} of ${state.steps.length}`}</h2><progress class="progress-track" value="${state.step}" max="${state.steps.length - 1}" aria-label="Guidance progress"></progress><p id="guidance-instruction" class="guidance-instruction">${html(step.instruction)}</p>${step.cue ? `<div class="guidance-cue"><strong>What to look or listen for</strong><p>${html(step.cue)}</p></div>` : ''}${step.connection ? `<p class="muted">${html(connectionDetails(step.connection))}</p>` : ''}<p class="muted">Fictional demo · Your location is not tracked. Confirm only when you reach the landmark.</p><div class="actions">${step.confirm ? `<button id="confirm-step" class="button primary guidance-confirm">${html(step.confirm)}</button>` : '<button id="finish-guidance" class="button primary">Back to route overview</button>'}<button id="previous-step" class="button" ${state.step === 0 ? 'disabled' : ''}>Previous step</button><button id="repeat-step" class="button" ${speechSupported ? '' : 'disabled'}>Read aloud</button>${!finished ? '<button id="end-guidance" class="button">End guidance</button>' : ''}</div>`;
+  $('#guidance-heading').textContent = `Step ${state.step + 1} of ${state.steps.length}`;
+  $('#guidance-content').innerHTML = guidanceContent(
+    state.steps,
+    state.step,
+    settings,
+    speechSupported,
+    state.speechPaused,
+  );
   if (announce) {
-    // Browsers cannot detect screen-reader use. Speech is opt-in and the current
-    // text receives focus, so assistive technology can read the same instruction.
-    $('#guidance-instruction').tabIndex = -1;
+    // Browser speech remains opt-in: unlike SwiftUI, browsers cannot detect VoiceOver.
+    // The focused instruction includes progress and the arrival cue for screen readers.
     $('#guidance-instruction').focus();
-    if (settings.spokenDirections)
-      speak(step.instruction + (step.cue ? ` Arrival cue: ${step.cue}` : ''));
+    if (settings.spokenDirections && !state.speechPaused) speakStep();
   }
 }
 
-function findRoute() {
+function goTo(screen, { replace = false, focusID } = {}) {
+  if (window.location.hash !== `#${screen}`)
+    history[replace ? 'replaceState' : 'pushState'](null, '', `#${screen}`);
+  showScreen(true, focusID);
+}
+
+function showScreen(focus = true, focusID) {
+  if (!state.map) return;
+  let screen = window.location.hash.slice(1) || 'routes';
+  if (
+    ![
+      'routes',
+      'route',
+      'guidance',
+      'pick-start',
+      'pick-destination',
+      'nearby',
+      'settings',
+    ].includes(screen) ||
+    (screen === 'route' && !canSearch()) ||
+    (screen === 'guidance' && !state.steps)
+  ) {
+    screen = 'routes';
+    history.replaceState(null, '', '#routes');
+  }
   stopSpeech();
-  state.steps = null;
-  state.step = 0;
-  state.route = planRoute(
-    currentMap(),
-    $('#start').value,
-    $('#destination').value,
-    settings.requireStepFree,
-  );
-  $('#route-notice').textContent = settings.simulateElevatorOutage
-    ? 'Demo condition: elevators are unavailable.'
-    : '';
-  renderRoute();
-  focusResult();
+  if (screen !== 'nearby') stopSimulation('Simulation stopped when you left Nearby.');
+  if (screen !== 'guidance' && state.steps) state.steps = null;
+  if (dialog.open) dialog.close();
+  state.screen = screen;
+  const view = screen.startsWith('pick-') ? 'picker' : screen;
+  for (const name of ['routes', 'picker', 'route', 'guidance', 'nearby', 'settings'])
+    $(`#${name}-view`).hidden = name !== view;
+  $('#tab-bar').hidden = screen === 'guidance';
+  $('.app-shell').classList.toggle('guidance-mode', screen === 'guidance');
+  $('.app-shell').classList.toggle('plain-mode', screen === 'guidance' || screen === 'nearby');
+  const tab = ['settings', 'nearby'].includes(screen) ? screen : 'routes';
+  all('[data-tab]').forEach((link) => {
+    if (link.dataset.tab === tab) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  });
+  if (screen === 'routes') {
+    state.route = null;
+    updateSelections();
+  }
+  if (screen.startsWith('pick-')) renderPicker(screen.slice(5));
+  if (screen === 'route') renderRoute();
+  // Preserve the Routes navigation stack when visiting another tab, as TabView does.
+  $('[data-tab="routes"]').href = state.route ? '#route' : '#routes';
+  window.scrollTo(0, 0);
+  if (screen === 'guidance') {
+    renderGuidance();
+    return;
+  }
+  const heading = screen === 'route' ? 'result-heading' : `${view}-heading`;
+  if (focus) document.getElementById(focusID ?? heading)?.focus({ preventScroll: true });
 }
 
 function syncSettings() {
@@ -107,26 +185,39 @@ function syncSettings() {
     if (input.type === 'checkbox') input.checked = settings[input.dataset.setting];
     else input.value = settings[input.dataset.setting];
   });
+  $('#step-free-description').textContent = settings.requireStepFree
+    ? 'Only connections confirmed step-free are used. Stairs and anything unconfirmed are excluded.'
+    : 'The shortest route may include stairs.';
   $('#threshold-label').textContent = `${settings.nearbyAlertDistance} m`;
-}
-
-function persistSettings() {
-  $('#settings-status').textContent = saveSettings(storage, settings)
-    ? 'Preferences saved in this browser.'
-    : 'Storage is unavailable. Your preferences will last for this session only.';
+  const alerts = [
+    settings.nearbyAudioAlerts && 'audio',
+    settings.nearbyHapticAlerts && 'haptic',
+  ].filter(Boolean);
+  $('#alert-summary').textContent = alerts.length
+    ? `Simulated alerts on (${alerts.join(' and ')}) for surfaces closer than ${settings.nearbyAlertDistance} m. Change in Settings.`
+    : 'Alerts are off. Turn on audio or haptic alerts in Settings.';
+  const outages =
+    settings.simulateElevatorOutage && state.map
+      ? state.map.connections
+          .filter((c) => c.type === 'elevator')
+          .map((c) => `Simulated: ${c.name} is out of service (demo setting).`)
+          .join(' ')
+      : '';
+  $('.outage-notice').hidden = !outages;
+  $('.outage-notice').textContent = outages;
 }
 
 function changeSetting(key, value) {
   settings[key] = value;
   syncSettings();
-  persistSettings();
+  $('#settings-status').textContent = saveSettings(storage, settings)
+    ? 'Preferences saved in this browser.'
+    : 'Storage is unavailable. Your preferences will last for this session only.';
   if (key === 'requireStepFree' || key === 'simulateElevatorOutage') {
     stopSpeech();
     state.steps = null;
-    state.route = null;
-    renderRoute();
-    $('#route-notice').textContent =
-      `Routing preferences changed. Find a new route.${settings.simulateElevatorOutage ? ' Demo elevators are unavailable.' : ''}`;
+    if (state.route) renderRoute();
+    $('#route-notice').textContent = 'Routing preferences updated.';
   }
   if (key === 'spokenDirections' || key === 'nearbyAudioAlerts') stopSpeech();
   if (key === 'nearbyAlertDistance') state.policy = new ProximityPolicy(value);
@@ -135,9 +226,10 @@ function changeSetting(key, value) {
 function updateDistance() {
   const unreliable = $('#unreliable').checked;
   const distance = Number($('#distance').value);
+  const hasReading = state.simulation && !unreliable;
   $('#distance-value').textContent = `${distance.toFixed(2)} m`;
-  $('#distance-reading').textContent = unreliable ? '—' : distance.toFixed(2);
-  $('#distance-unit').textContent = unreliable ? '' : 'm';
+  $('#distance-reading').textContent = hasReading ? distance.toFixed(2) : '—';
+  $('#distance-unit').textContent = hasReading ? 'm' : '';
   $('#sensor-state').textContent = !state.simulation
     ? 'Simulation stopped'
     : unreliable
@@ -163,7 +255,6 @@ function simulationTick() {
   if (settings.nearbyHapticAlerts && vibrationSupported && event !== 'restored')
     navigator.vibrate([120, 80, 120]);
 }
-
 function stopSimulation(message = 'Simulation stopped.') {
   if (!state.simulation) return;
   clearInterval(state.simulation);
@@ -174,33 +265,37 @@ function stopSimulation(message = 'Simulation stopped.') {
   $('#nearby-event').textContent = message;
   updateDistance();
 }
-
-function switchTab(focus = true) {
-  const requested = window.location.hash.slice(1);
-  const tab = ['routes', 'nearby', 'settings'].includes(requested) ? requested : 'routes';
-  if (tab !== 'nearby') stopSimulation('Simulation stopped when you left Nearby.');
+function finishGuidance() {
   stopSpeech();
-  state.tab = tab;
-  for (const name of ['routes', 'nearby', 'settings']) $(`#${name}-view`).hidden = name !== tab;
-  all('nav a').forEach((link) => {
-    if (link.hash === `#${tab}`) link.setAttribute('aria-current', 'page');
-    else link.removeAttribute('aria-current');
-  });
-  if (focus && state.map) $(`#${tab}-heading`).focus();
+  state.steps = null;
+  if (dialog.open) dialog.close();
+  goTo('route', { replace: true });
 }
 
 $('#route-form').addEventListener('submit', (event) => {
   event.preventDefault();
-  findRoute();
+  if (canSearch()) goTo('route');
 });
-for (const input of [$('#start'), $('#destination')])
-  input.addEventListener('change', () => {
-    stopSpeech();
-    state.steps = null;
-    state.route = null;
-    renderRoute();
-    $('#route-notice').textContent = 'Locations changed. Find a new route.';
-  });
+for (const kind of ['start', 'destination'])
+  $(`#${kind}-picker`).addEventListener('click', () => goTo(`pick-${kind}`));
+all('[data-go]').forEach((button) =>
+  button.addEventListener('click', () => goTo(button.dataset.go)),
+);
+$('#picker-options').addEventListener('change', (event) => {
+  if (!state.screen.startsWith('pick-') || !event.target.matches('input[name="landmark"]')) return;
+  const kind = state.screen.slice(5);
+  state[`${kind}ID`] = event.target.value;
+  state.route = null;
+  state.steps = null;
+  $('#route-notice').textContent = '';
+  goTo('routes', { focusID: `${kind}-picker` });
+});
+$('#picker-options').addEventListener('click', (event) => {
+  if (!state.screen.startsWith('pick-') || !event.target.matches('input[name="landmark"]')) return;
+  const kind = state.screen.slice(5);
+  // A radio's change event does not fire when the existing selection is tapped.
+  if (event.target.value === state[`${kind}ID`]) goTo('routes', { focusID: `${kind}-picker` });
+});
 all('[data-setting]').forEach((input) =>
   input.addEventListener('change', () =>
     changeSetting(
@@ -209,37 +304,35 @@ all('[data-setting]').forEach((input) =>
     ),
   ),
 );
-all('[data-scenario]').forEach((button) =>
-  button.addEventListener('click', () => {
-    settings.requireStepFree = true;
-    settings.simulateElevatorOutage = button.dataset.scenario === 'outage';
-    syncSettings();
-    persistSettings();
-    $('#start').value = 'plaza';
-    $('#destination').value = 'room-201';
-    findRoute();
-  }),
-);
 $('#result').addEventListener('click', (event) => {
+  if (event.target.closest('button')?.id !== 'start-guidance' || !state.route?.ok) return;
+  state.steps = guidanceSteps(state.route);
+  state.step = 0;
+  state.speechPaused = false;
+  goTo('guidance');
+});
+$('#guidance-content').addEventListener('click', (event) => {
   const id = event.target.closest('button')?.id;
-  if (id === 'start-guidance') {
-    state.steps = guidanceSteps(state.route);
-    state.step = 0;
-    renderGuidance();
-  } else if (id === 'confirm-step' || id === 'previous-step') {
+  if (id === 'confirm-step' || id === 'previous-step') {
     stopSpeech();
     state.step = moveStep(state.step, id === 'confirm-step' ? 1 : -1, state.steps);
     renderGuidance();
-  } else if (id === 'repeat-step') {
-    const step = state.steps[state.step];
-    speak(step.instruction + (step.cue ? ` Arrival cue: ${step.cue}` : ''));
-  } else if (id === 'end-guidance' || id === 'finish-guidance') {
-    stopSpeech();
-    state.steps = null;
-    renderRoute();
-    focusResult();
-  }
+  } else if (id === 'repeat-step') speakStep();
+  else if (id === 'pause-speech') {
+    state.speechPaused = !state.speechPaused;
+    if (state.speechPaused) stopSpeech();
+    else speakStep();
+    renderGuidance(false);
+    $('#pause-speech').focus();
+  } else if (id === 'finish-guidance') finishGuidance();
 });
+$('#end-guidance').addEventListener('click', () => {
+  dialog.showModal();
+  $('#keep-going').focus();
+});
+$('#keep-going').addEventListener('click', () => dialog.close());
+$('#confirm-end-route').addEventListener('click', finishGuidance);
+$('#test-voice').addEventListener('click', () => speak('This is how route directions will sound.'));
 $('#simulation-toggle').addEventListener('click', () => {
   if (state.simulation) stopSimulation();
   else {
@@ -250,14 +343,16 @@ $('#simulation-toggle').addEventListener('click', () => {
     simulationTick();
   }
 });
+$('#simulation-details').addEventListener('toggle', () => {
+  if (!$('#simulation-details').open) stopSimulation();
+});
 $('#distance').addEventListener('input', updateDistance);
 $('#unreliable').addEventListener('change', updateDistance);
 $('.skip-link').addEventListener('click', (event) => {
-  // Keep the skip target out of the hash router, which would move focus again.
   event.preventDefault();
   $('#main').focus();
 });
-window.addEventListener('hashchange', () => switchTab());
+window.addEventListener('hashchange', () => showScreen());
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     stopSimulation('Simulation paused while this tab was hidden. Start it again to continue.');
@@ -271,17 +366,17 @@ window.addEventListener('pagehide', () => {
 $('#retry').addEventListener('click', () => loadMap());
 
 $('#speech-support').textContent = speechSupported
-  ? 'Browser speech is available. Voice availability varies by device.'
+  ? 'Voice availability depends on your browser and device.'
   : 'Speech is unavailable in this browser. All directions remain visible as text.';
 $('#vibration-support').textContent = vibrationSupported
   ? 'This browser exposes vibration. Your hardware may still ignore it.'
-  : 'Vibration is unavailable in this browser. Visual and optional audio alerts still work.';
+  : 'Haptic alerts are unavailable in this browser. Most laptops cannot vibrate.';
 all('[data-setting="spokenDirections"], [data-setting="nearbyAudioAlerts"]').forEach((input) => {
   input.disabled = !speechSupported;
 });
+$('#test-voice').disabled = !speechSupported;
 $('[data-setting="nearbyHapticAlerts"]').disabled = !vibrationSupported;
 syncSettings();
-switchTab(false);
 
 async function loadMap() {
   $('#loading').hidden = false;
@@ -294,22 +389,12 @@ async function loadMap() {
     if (errors.length) throw new Error(errors.join(' '));
     state.map = map;
     $('#disclaimer').textContent = map.disclaimer;
-    for (const [selector, key] of [
-      ['#start', 'canStartHere'],
-      ['#destination', 'isDestination'],
-    ]) {
-      $(selector).replaceChildren(
-        ...map.landmarks
-          .filter((landmark) => landmark[key])
-          .map((landmark) => new Option(landmark.name, landmark.id)),
-      );
-    }
-    $('#start').value = 'plaza';
-    $('#destination').value = 'room-201';
+    $('#map-disclaimer').textContent = map.disclaimer;
+    $('#map-name').textContent = map.name;
     $('#app').hidden = false;
-    if (settings.simulateElevatorOutage)
-      $('#route-notice').textContent = 'Demo condition: elevators are unavailable.';
-    updateMap();
+    syncSettings();
+    updateSelections();
+    showScreen(false);
   } catch (error) {
     $('#app').hidden = true;
     $('#load-error').hidden = false;

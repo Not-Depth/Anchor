@@ -4,6 +4,35 @@ A browser version of UB Access Navigator for teammates on Windows, macOS, and Li
 
 The map is **fictional demo data**, not Davis Hall or any real building. Do not use it for real navigation. Nearby is a **manual simulation**, not a camera or obstacle detector.
 
+## What is shared and what needs two updates
+
+**Changing Swift does not automatically change this web app.** This is a separate JavaScript implementation, not an iPhone emulator, SwiftUI renderer, or automatic test of the native app.
+
+| Change                                                                                                   | Appears in both versions automatically? | Required work                                                                                      |
+| -------------------------------------------------------------------------------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Landmarks, connections, authored directions, or distances in `UBAccessNavigator/Resources/demo_map.json` | Both versions read the same source file | Refresh the local web page; rebuild static web exports and the native app to include updated data. |
+| SwiftUI screens, layout, labels, or navigation                                                           | No                                      | Update the corresponding HTML/CSS/JavaScript if the web counterpart should match.                  |
+| Swift routing, guidance, or alert logic                                                                  | No                                      | Port the behavior and update tests in both implementations.                                        |
+| ARKit, camera, native speech, haptics, or VoiceOver integration                                          | No                                      | Test the actual native app on supported Apple hardware. Browser simulation cannot validate these.  |
+
+The browser companion is useful for reviewing shared map content, demonstrating navigation flows without a Mac, and collecting interface feedback. It does **not** prove that a Swift change works. Keeping two implementations adds maintenance work, and is worthwhile only if the team wants the browser demo as a separate deliverable.
+
+If the team's goal is for everyone to work on **the same Swift app**, Windows teammates can edit and push Swift files while a teammate or a remotely accessible Mac builds and runs them in Xcode. That avoids maintaining a second UI. A single application codebase that runs locally across native iOS and the web would require a different cross-platform architecture, not this companion or a Docker wrapper.
+
+## How the interface follows the iPhone app
+
+The web interface follows the source screens in `UBAccessNavigator/Features/`: a narrow single-column layout, system fonts, grouped forms, large navigation titles, blue buttons, switches, bottom tabs, and light/dark colors.
+
+| Native screen           | Browser counterpart                                                                                                                                |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RoutesView.swift`      | Empty initial selections, floor-grouped place picker screens, step-free toggle, disabled Find route until different places are chosen.             |
+| `RouteResultView.swift` | Separate Route screen with Summary, Before you go, Start guidance, Steps, and numbered schematic sections.                                         |
+| `GuidanceView.swift`    | Full-screen guidance with hidden tab bar, arrival cue, Next/Previous previews, Repeat and Pause/Resume speech, Finish, and End route confirmation. |
+| `SettingsView.swift`    | Matching section order, setting labels, Test voice, and Map data.                                                                                  |
+| `NearbyView.swift`      | Unsupported-device message by default. Optional synthetic readings are behind Try simulated readings.                                              |
+
+This is a source-based visual adaptation. It has not been compared to a running iPhone build on this Windows environment, and exact system fonts and controls vary by operating system. Browser speech stays off by default because browser APIs cannot detect screen-reader use; the native app can handle VoiceOver directly.
+
 ## Run on your laptop
 
 Install **Node.js 22 or later** (an LTS release is recommended), then reopen your terminal. From the folder where you keep projects:
@@ -52,16 +81,16 @@ Then open http://127.0.0.1:5174. The server binds only to your own laptop. Doubl
 
 The app never requests a camera or location permission. Browser vibration is usually unavailable on laptops; the UI reports support. Browser speech depends on the operating system and installed voices; some voices may use an online service. All essential instructions remain visible as text.
 
-The simulation stops when you leave Nearby or hide the browser tab. It requires an explicit restart. Changing routing preferences or locations clears old guidance so it cannot continue on a stale route.
+The simulation stops when you leave Nearby, collapse its controls, or hide the browser tab. It requires an explicit restart. Changing routing preferences recalculates an existing summary, and choosing different locations clears the old route. The bottom tabs are hidden during guidance; End route asks for confirmation before returning to the summary.
 
 ## Demo scenarios
 
-1. North Plaza â†’ Room 201, step-free **off**: front steps and Stairwell A; 6 connections.
+1. North Plaza -> Room 201, step-free **off**: front steps and Stairwell A; 6 connections.
 2. Same route, step-free **on**: west ramp and Elevator A; 7 connections, 87 m of recorded simulated length, plus 1 connection whose length is unrecorded.
-3. Enable **Settings â†’ Simulate elevator outage**, with step-free on: no suitable route; Elevator A is identified as unavailable.
-4. North Plaza â†’ Annex reading room, step-free on: no route; skybridge suitability is unknown. With step-free off, the route includes warnings.
-5. Room 105 â†’ North Plaza uses the exit-only door; the reverse trip does not.
-6. Nearby â†’ Start simulation: move below 1 m, enable lost readings, then restore them. Enable optional audio in Settings. These are synthetic readings, not measurements.
+3. Enable **Settings -> Simulate elevator outage**, with step-free on: no suitable route; Elevator A is identified as unavailable.
+4. North Plaza -> Annex reading room, step-free on: no route; skybridge suitability is unknown. With step-free off, the route includes warnings.
+5. Room 105 -> North Plaza uses the exit-only door; the reverse trip does not.
+6. Nearby -> Try simulated readings -> Start simulation: move below 1 m, enable lost readings, then restore them. Enable optional audio in Settings. These are synthetic readings, not measurements.
 
 ## Project structure
 
@@ -72,6 +101,7 @@ web/
   favicon.svg                Local vector icon
   src/
     app.js                   UI state, browser capabilities, and event handlers
+    views.js                 Summary and guidance templates matching native sections
     ui.js                    Escaped view helpers and floor schematic
     core/
       map.js                 Validation and immutable availability overrides
@@ -113,7 +143,7 @@ npm run test:browser
 
 On Windows, browser tests use the installed Microsoft Edge. On macOS/Linux, first run `npx playwright install chromium` (Linux may also need `npx playwright install --with-deps chromium`). Unit/server tests require only Node and can run without `npm ci`.
 
-Browser tests cover desktop and narrow layouts in Chromium, including automated WCAG A/AA checks. These checks complement, and do not replace, manual testing with screen readers and real hardware. Firefox and Safari are not covered by this automated suite.
+Browser tests cover desktop and narrow layouts in Chromium, including navigation, speech controls, confirmation dialogs, and automated WCAG A/AA checks in light and dark modes. Tests use port 5175 so they can run alongside a development preview on 5173; set `ANCHOR_TEST_PORT` if another test port is needed. These checks complement, and do not replace, manual testing with screen readers and real hardware. Firefox and Safari are not covered by this automated suite.
 
 Create a self-contained static export:
 
