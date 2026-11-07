@@ -54,8 +54,8 @@ struct ProximityAlertPolicy {
         unreliableSince = nil
         if reportedUnreliable {
             reportedUnreliable = false
-            isNear = false  // re-evaluate from scratch after an outage
-            return .readingsRestored
+            // On recovery, give a nearby surface priority over a status announcement.
+            if distance > alertDistance { return .readingsRestored }
         }
 
         if isNear {

@@ -19,4 +19,9 @@ enum DistanceText {
     static func spokenDepth(_ value: Double) -> String {
         "\(String(format: "%.1f", value)) meters"
     }
+
+    /// Spoken proximity cue with the measured distance.
+    static func proximityWarning(_ value: Double) -> String {
+        "Warning, objects ahead at \(spokenDepth(value))."
+    }
 }

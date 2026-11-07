@@ -36,7 +36,7 @@ final class NearbyViewModel {
     private let settings: AppSettings
     private let speech: SpeechService
     private let haptics: HapticsService
-    @ObservationIgnored private var alertPolicy = ProximityAlertPolicy(alertDistance: 1.0)
+    @ObservationIgnored private var alertPolicy: ProximityAlertPolicy
     @ObservationIgnored private var tickTask: Task<Void, Never>?
     @ObservationIgnored private var resumeWhenActive = false
 
@@ -49,13 +49,14 @@ final class NearbyViewModel {
         self.settings = settings
         self.speech = speech
         self.haptics = haptics
+        self.alertPolicy = ProximityAlertPolicy(alertDistance: settings.nearbyAlertDistance)
         #if !targetEnvironment(simulator)
         self.semantic = DepthSemantic.bestSupported()
         self.controller = DepthSessionController()
         #endif
         state = Self.checkSupportAndPermission()
         #if !targetEnvironment(simulator)
-        controller.onReading = { [weak self] reading in self?.latestReading = reading }
+        controller.onReading = { [weak self] reading in self?.evaluateAlerts(with: reading) }
         controller.onEvent = { [weak self] event in self?.handle(event) }
         #endif
     }
@@ -191,7 +192,7 @@ final class NearbyViewModel {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(200))
                 guard let self else { return }
-                self.tick()
+                self.evaluateAlerts()
             }
         }
     }
@@ -201,9 +202,11 @@ final class NearbyViewModel {
         tickTask = nil
     }
 
-    private func tick() {
-        now = ProcessInfo.processInfo.systemUptime
+    /// Evaluate a frame on arrival. The timer also calls this when frames stop arriving.
+    private func evaluateAlerts(with reading: DepthReading? = nil) {
         guard state == .running else { return }
+        if let reading { latestReading = reading }
+        now = ProcessInfo.processInfo.systemUptime
         alertPolicy.alertDistance = settings.nearbyAlertDistance
         if let event = alertPolicy.update(reading: latestReading, now: now) {
             deliver(event)
@@ -214,7 +217,7 @@ final class NearbyViewModel {
         switch event {
         case .near(let distance):
             if settings.nearbyHapticAlerts { haptics.proximityAlert() }
-            if settings.nearbyAudioAlerts { speech.speak("Surface at \(DistanceText.spokenDepth(distance))") }
+            if settings.nearbyAudioAlerts { speech.speak(DistanceText.proximityWarning(distance)) }
         case .readingsUnreliable:
             if settings.nearbyHapticAlerts { haptics.warning() }
             if settings.nearbyAudioAlerts { speech.speak("Depth readings unavailable. Alerts paused.") }

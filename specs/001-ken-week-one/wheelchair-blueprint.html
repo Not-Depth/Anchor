@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>North Plaza to Room 201 · Anchor wheelchair route draft</title>
+  <style>
+    :root {
+      --ink: #183337;
+      --muted: #475d60;
+      --route: #00675e;
+      --rule: #8caaa6;
+      --panel: #f3f8f6;
+      font: 100%/1.48 system-ui, sans-serif;
+      color: var(--ink);
+      background: #fff;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { max-width: 60rem; margin: auto; padding: 2.25rem clamp(1rem, 4vw, 3rem); }
+    header { border-top: .28rem solid var(--route); padding-top: .8rem; }
+    .eyebrow, .key {
+      font-family: ui-monospace, monospace;
+      font-weight: 650;
+      color: var(--route);
+    }
+    .eyebrow { margin: 0 0 .35rem; font-size: .8rem; letter-spacing: .06em; }
+    h1, h2, h3, p, figure { margin: 0; }
+    h1 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.08; letter-spacing: -.035em; }
+    h2 { font-size: 1.25rem; line-height: 1.2; }
+    h3 { font-size: 1.1rem; line-height: 1.25; }
+    .intro { margin-top: .55rem; color: var(--muted); max-width: 72ch; }
+    .maps { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; margin-top: 1.15rem; }
+    figure { background: var(--panel); border: 1px solid var(--rule); padding: .8rem; }
+    figcaption { padding: 0 .1rem .5rem; border-bottom: 1px solid var(--rule); font-weight: 700; }
+    svg { width: 100%; height: auto; display: block; color: var(--ink); }
+    .line { fill: none; stroke: var(--route); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+    .station { fill: white; stroke: var(--route); stroke-width: 2.7; }
+    .letter { font: 700 14px system-ui, sans-serif; fill: var(--route); text-anchor: middle; }
+    .label { font: 650 16px system-ui, sans-serif; fill: var(--ink); }
+    .detail { font: 13px system-ui, sans-serif; fill: var(--muted); }
+    .transfer { margin: .6rem 0 1.15rem; font-size: .94rem; }
+    .directions { border-top: 2px solid var(--ink); padding-top: .8rem; }
+    ol { margin: .55rem 0 0; padding-left: 1.9rem; }
+    li { padding: .25rem 0 .25rem .2rem; }
+    li::marker { color: var(--muted); font-weight: 650; }
+    .key { white-space: nowrap; margin-right: .3em; }
+    .notes { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; border-top: 1px solid var(--rule); margin-top: 1rem; padding-top: .8rem; }
+    .notes p { margin-top: .25rem; }
+    footer { border-top: 1px solid var(--rule); margin-top: 1rem; padding-top: .6rem; color: var(--muted); font-size: .82rem; }
+    a { color: #005952; text-underline-offset: .15em; }
+    a:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+    @media (max-width: 42rem) {
+      .maps, .notes { grid-template-columns: 1fr; }
+    }
+    @page { size: auto; margin: .55in; }
+    @media print {
+      :root { font-size: 10.5pt; }
+      main { padding: 0; max-width: none; }
+      h1 { font-size: 26pt; }
+      .maps, .notes { grid-template-columns: 1fr 1fr; }
+      figure, li, .notes { break-inside: avoid; }
+      svg { max-height: 1.95in; }
+      a { color: inherit; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">Anchor / Wheelchair route draft</p>
+    <h1>North Plaza to Room 201</h1>
+    <p class="intro"><strong>Fictional Demo Hall.</strong> Step-free route via the west entrance ramp and Elevator A. The diagram is not to scale. Landmarks, distances and availability are simulated.</p>
+  </header>
+
+  <div class="maps">
+    <figure>
+      <figcaption>Floor 1 · North Plaza to Elevator A</figcaption>
+      <svg viewBox="0 0 350 225" role="img" aria-labelledby="f1-title f1-desc">
+        <title id="f1-title">Floor 1 route from A through E</title>
+        <desc id="f1-desc">Start at North Plaza. Take the west ramp to the Main Entrance lobby, pass the west and east junctions, and reach the Elevator A lobby.</desc>
+        <path class="line" d="M26 25 V135 H224 V200"/>
+        <g data-node="plaza" transform="translate(26 25)">
+          <circle class="station" r="11"/><text class="letter" y="5">A</text>
+          <text class="label" x="20" y="5">North Plaza · Start</text>
+        </g>
+        <text class="detail" x="46" y="56">West entrance ramp</text>
+        <g data-node="main-entrance" transform="translate(26 84)">
+          <circle class="station" r="11"/><text class="letter" y="5">B</text>
+          <text class="label" x="20" y="5">Main Entrance lobby</text>
+        </g>
+        <g data-node="f1-west-junction" transform="translate(26 135)">
+          <circle class="station" r="11"/><text class="letter" y="5">C</text>
+          <text class="label" x="-10" y="31">West junction</text>
+        </g>
+        <g data-node="f1-east-junction" transform="translate(224 135)">
+          <circle class="station" r="11"/><text class="letter" y="5">D</text>
+          <text class="label" x="-12" y="-21">East junction</text>
+        </g>
+        <g data-node="f1-elevator-lobby" transform="translate(224 200)">
+          <circle class="station" r="11"/><text class="letter" y="5">E</text>
+          <text class="label" x="-18" y="5" text-anchor="end">Elevator A lobby</text>
+        </g>
+      </svg>
+    </figure>
+    <figure>
+      <figcaption>Floor 2 · Elevator A to Room 201</figcaption>
+      <svg viewBox="0 0 350 225" role="img" aria-labelledby="f2-title f2-desc">
+        <title id="f2-title">Floor 2 route from F through H</title>
+        <desc id="f2-desc">From the Elevator A lobby, go through the central junction to Room 201.</desc>
+        <path class="line" d="M248 200 L92 119 V31"/>
+        <g data-node="f2-elevator-lobby" transform="translate(248 200)">
+          <circle class="station" r="11"/><text class="letter" y="5">F</text>
+          <text class="label" x="-18" y="5" text-anchor="end">Elevator A lobby</text>
+        </g>
+        <g data-node="f2-central-junction" transform="translate(92 119)">
+          <circle class="station" r="11"/><text class="letter" y="5">G</text>
+          <text class="label" x="20" y="4">Central junction</text>
+        </g>
+        <g data-node="room-201" transform="translate(92 31)">
+          <circle class="station" r="11"/><text class="letter" y="5">H</text>
+          <text class="label" x="20" y="5">Room 201 · Finish</text>
+        </g>
+      </svg>
+    </figure>
+  </div>
+  <p class="transfer"><strong>E to F connects the floors.</strong> Both letters mark a lobby for the same elevator.</p>
+
+  <section class="directions">
+    <h2>Step-free directions</h2>
+    <ol>
+      <li data-leg="west-ramp"><span class="key">A–B</span> From North Plaza, follow the path beside the front steps up the <strong>west entrance ramp</strong> to the main doors. A push-button opener is available. <strong>18 m</strong></li>
+      <li data-leg="lobby-doors"><span class="key">B–C</span> Pass through the inner lobby doors and continue straight to the west junction. <strong>8 m</strong></li>
+      <li data-leg="main-corridor"><span class="key">C–D</span> Follow the main corridor past the bulletin boards to the east junction. <strong>25 m</strong></li>
+      <li data-leg="east-to-elevator"><span class="key">D–E</span> Take the corridor to the Elevator A lobby on Floor 1. <strong>10 m</strong></li>
+      <li data-leg="elevator-a"><span class="key">E–F</span> Call <strong>Elevator A</strong>, enter and select Floor 2. Exit at the Floor 2 announcement. <strong>Length unrecorded.</strong></li>
+      <li data-leg="f2-elevator-to-central"><span class="key">F–G</span> Leave the elevator lobby and follow the corridor to the wide carpeted area at the central junction. <strong>20 m</strong></li>
+      <li data-leg="central-to-room-201"><span class="key">G–H</span> Cross the carpeted area to the door beyond the seating area. The raised-letter and braille sign marks Room 201. <strong>6 m</strong></li>
+    </ol>
+    <p class="transfer">The six segments with recorded lengths add up to <strong>87 m</strong>. The elevator ride is additional.</p>
+  </section>
+
+  <div class="notes">
+    <section>
+      <h3>If Elevator A is unavailable</h3>
+      <p>With step-free routing on, the app reports “No suitable route found.” Stairs are excluded.</p>
+    </section>
+    <section>
+      <h3>Ready for Johnny's review</h3>
+      <p>Ken confirmed this Demo Hall route for the weekly draft. Check the A-H landmark order, ramp, elevator transition and clarity of the directions.</p>
+    </section>
+  </div>
+  <footer>Source: <a href="https://github.com/Not-Depth/Anchor/blob/bd8fff53ff2281afbec2132a2c4112cf3eeeaf99/UBAccessNavigator/Resources/demo_map.json">Demo Hall map data</a> · <a href="https://github.com/Not-Depth/Anchor/blob/bd8fff53ff2281afbec2132a2c4112cf3eeeaf99/Tests/NavigatorCoreTests/RoutePlannerTests.swift">Native route scenarios</a></footer>
+</main>
+</body>
+</html>

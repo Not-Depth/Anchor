@@ -18,7 +18,7 @@ final class AppSettings {
     }
 
     /// Distances offered for nearby alerts, in meters.
-    static let alertDistanceOptions: [Double] = [0.5, 0.75, 1.0, 1.5, 2.0]
+    static let alertDistanceOptions: [Double] = [0.5, 0.75, 1.0, 1.5, 2.0, 3.0]
 
     private let defaults: UserDefaults
 
@@ -52,7 +52,7 @@ final class AppSettings {
             Key.spokenDirections: true,
             Key.nearbyAudioAlerts: false,
             Key.nearbyHapticAlerts: false,
-            Key.nearbyAlertDistance: 1.0,
+            Key.nearbyAlertDistance: 3.0,
             Key.simulateElevatorOutage: false,
         ])
         requireStepFree = defaults.bool(forKey: Key.requireStepFree)

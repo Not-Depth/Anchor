@@ -33,7 +33,7 @@ A native iPhone app (Swift, SwiftUI) with three tabs:
 
 | Part | Status |
 |---|---|
-| `Core/` (map model, validation, Dijkstra, guidance, depth math, alert logic) | Compiled with Swift 6.0.3 on Linux. **40 unit tests pass** (`swift test`). |
+| `Core/` (map model, validation, Dijkstra, guidance, depth math, alert logic) | Compiled with Swift 6.4.2 on Linux. **43 unit tests pass** (`swift test`, November 7, 2026). |
 | `demo_map.json` | Loads and passes all validation rules (checked by the tests). |
 | `UBAccessNavigator.xcodeproj` | Written by hand in Xcode 16's project format. Parsed and every internal reference checked, but **not yet opened in Xcode**. |
 | SwiftUI / ARKit / speech code | **Not compiled yet.** It needs Xcode on a Mac. The first build on your Mac is the real check. |
@@ -58,10 +58,10 @@ xcrun --sdk iphoneos --show-sdk-version   # iOS SDK version
 
 ### Step 2. Run the Core tests (no simulator needed)
 ```bash
-cd UBAccessNavigator
+# From the repository root, beside Package.swift
 swift test
 ```
-Expected result: `Executed 40 tests, with 0 failures`.
+Expected result: the full Core test suite finishes with zero failures.
 
 ### Step 3. Compile-check both code paths from Terminal
 The ARKit files are compiled **only for real devices**, so a simulator build alone doesn't check them. Run both commands:
@@ -110,7 +110,7 @@ The camera preview uses RealityKit's `ARView` rather than `ARSCNView`. Apple mar
 ```
 UBAccessNavigator/
 ├─ Package.swift              ← lets `swift test` build Core/ on its own
-├─ Tests/NavigatorCoreTests/  ← 40 unit tests for Core/
+├─ Tests/NavigatorCoreTests/  ← unit tests for Core/
 ├─ UBAccessNavigator.xcodeproj
 └─ UBAccessNavigator/         ← everything in here is compiled into the app
    ├─ Core/        Foundation only. No UI, no ARKit. Unit-tested.
@@ -152,7 +152,8 @@ ARView (camera) ─► ARSession ─► DepthFrameDelegate (background queue, �
                                   ▼
                               DepthAnalyzer ─► DepthReading
                                   ▼
-                 NearbyViewModel (main actor, ticks every 0.2 s)
+                 NearbyViewModel (main actor, checks each new reading on arrival)
+                   ├─ also checks every 0.2 s when frames stop or age out
                    ├─ hides readings older than 0.6 s
                    └─ ProximityAlertPolicy ─► haptics / speech (if enabled)
 ```
@@ -225,11 +226,14 @@ When real survey data arrives, add a new map file with `dataStatus: "surveyed_un
 - **First Start tap:** the camera permission prompt appears. If you deny it, you get a message with an **Open Settings app** button.
 - **Permission changed while the app was in the background:** re-checked when you return.
 - **Point at a wall about 1 m away:** the reading should be about 1 m. With alerts on and the distance set to 1 m, alerts fire once, then repeat at most every 3 s.
+- **Earlier warning:** new installations default to a 3 m alert distance; updates keep saved choices. Turn on audio alerts and verify the selected threshold in Nearby. The spoken cue is “Warning, objects ahead at 1.4 meters.” for a 1.4 m reading. A fresh near reading after sustained signal loss takes priority over the recovery announcement.
 - **Cover the camera** or point at the sky: "No reliable reading." If alerts are on, you hear "Depth readings unavailable" once after about 1 s.
 - **Switch tabs or background the app:** the camera stops. Returning from the background restarts it if it was running.
 - **Interruption** (for example, a phone call or Siri): shows "Camera paused by the system."
 
 Limits, also shown in the app: the reading covers only the center of the view. It does not identify objects, and it can miss glass, thin poles, overhangs and drop-offs.
+
+The [Ken/Johnny handoff](specs/001-ken-week-one/handoff.md) includes the Demo Hall blueprint and the device trial for this change.
 
 ---
 

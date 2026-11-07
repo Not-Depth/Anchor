@@ -71,6 +71,16 @@ final class ProximityAlertPolicyTests: XCTestCase {
         XCTAssertEqual(policy.update(reading: reading(0.8, at: 4.1), now: 4.1), .near(distanceMeters: 0.8))
     }
 
+    func testFirstFrameAtConfiguredThresholdAlertsOnceAcrossFrameAndTimerUpdates() {
+        var policy = ProximityAlertPolicy(alertDistance: 3.0)
+        XCTAssertNil(policy.update(reading: reading(3.1, at: 0), now: 0))
+
+        let thresholdFrame = reading(3.0, at: 0.1)
+        XCTAssertEqual(policy.update(reading: thresholdFrame, now: 0.1), .near(distanceMeters: 3.0))
+        XCTAssertNil(policy.update(reading: thresholdFrame, now: 0.2))
+        XCTAssertNil(policy.update(reading: reading(2.9, at: 0.3), now: 0.3))
+    }
+
     func testHysteresisPreventsFlicker() {
         var policy = ProximityAlertPolicy(alertDistance: 1.0)
         XCTAssertNotNil(policy.update(reading: reading(0.95, at: 0), now: 0))
@@ -99,6 +109,19 @@ final class ProximityAlertPolicyTests: XCTestCase {
         XCTAssertEqual(policy.update(reading: reading(nil, at: 7.6), now: 7.6), .readingsUnreliable)
         XCTAssertNil(policy.update(reading: reading(nil, at: 9), now: 9))         // only once
         XCTAssertEqual(policy.update(reading: reading(2.0, at: 10), now: 10), .readingsRestored)
+        XCTAssertNil(policy.update(reading: reading(2.0, at: 10.1), now: 10.1))
+    }
+
+    func testFirstReliableNearFrameAfterOutageWarnsImmediately() {
+        var policy = ProximityAlertPolicy(alertDistance: 2.0)
+        XCTAssertEqual(policy.update(reading: reading(1.9, at: 0), now: 0), .near(distanceMeters: 1.9))
+        XCTAssertNil(policy.update(reading: reading(nil, at: 0.1), now: 0.1))
+        XCTAssertEqual(policy.update(reading: nil, now: 1.2), .readingsUnreliable)
+        XCTAssertNil(policy.update(reading: reading(0.5, at: 0.1), now: 1.3))
+
+        let recoveredFrame = reading(2.0, at: 1.4)
+        XCTAssertEqual(policy.update(reading: recoveredFrame, now: 1.4), .near(distanceMeters: 2.0))
+        XCTAssertNil(policy.update(reading: recoveredFrame, now: 1.5))
     }
 
     func testStaleReadingCountsAsUnreliable() {
@@ -107,5 +130,13 @@ final class ProximityAlertPolicyTests: XCTestCase {
         // Frames stopped arriving: the last reading (t = 0) ages out.
         XCTAssertNil(policy.update(reading: reading(0.5, at: 0), now: 0.7))
         XCTAssertEqual(policy.update(reading: reading(0.5, at: 0), now: 1.8), .readingsUnreliable)
+    }
+}
+
+final class ProximityWarningTextTests: XCTestCase {
+    func testWarningIncludesMeasuredDistanceToOneDecimalPlace() {
+        XCTAssertEqual(DistanceText.proximityWarning(0.1), "Warning, objects ahead at 0.1 meters.")
+        XCTAssertEqual(DistanceText.proximityWarning(1.26), "Warning, objects ahead at 1.3 meters.")
+        XCTAssertEqual(DistanceText.proximityWarning(3.0), "Warning, objects ahead at 3.0 meters.")
     }
 }
