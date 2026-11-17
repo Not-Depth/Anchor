@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Shows either a readable route summary or a clear "No suitable route found" state.
-/// The route is recalculated whenever settings change, so it always matches them.
+/// Shows either a readable route summary or a clear "No route found" state.
 struct RouteResultView: View {
     @Environment(AppModel.self) private var model
     let request: RouteRequest
@@ -31,16 +30,15 @@ struct RouteResultView: View {
 
     private func summary(_ route: Route) -> some View {
         List {
-            if let map = model.activeMap {
+            if let map = model.map {
                 Section {
-                    DemoDataBanner(map: map, compact: true, simulatedOutages: model.simulatedOutages)
+                    DemoDataBanner(map: map, compact: true)
                 }
             }
 
             Section("Summary") {
                 LabeledContent("From", value: route.start.name)
                 LabeledContent("To", value: route.destination.name)
-                LabeledContent("Route type", value: route.preferences.requireStepFree ? "Step-free only" : "Shortest (may use stairs)")
                 LabeledContent("Steps to confirm", value: "\(route.legs.count + 1)")
                 LabeledContent("Recorded length", value: lengthSummary(route))
                 LabeledContent("Uses", value: usesSummary(route))
@@ -71,7 +69,7 @@ struct RouteResultView: View {
                         Text("\(leg.index + 1). \(leg.instruction)")
                         Text("Arrive at: \(leg.to.name)")
                             .font(.subheadline.weight(.semibold))
-                        Text("\(leg.connection.type.displayName) · \(leg.connection.stepFree.displayName)")
+                        Text("\(leg.connection.type.displayName): \(leg.connection.name)")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -80,7 +78,7 @@ struct RouteResultView: View {
                 }
             }
 
-            if let map = model.activeMap {
+            if let map = model.map {
                 Section {
                     RouteSchematicView(map: map, route: route)
                 } header: {
@@ -115,25 +113,22 @@ struct RouteResultView: View {
         switch failure {
         case .noSuitableRoute(let diagnosis):
             List {
-                if let map = model.activeMap {
+                if let map = model.map {
                     Section {
-                        DemoDataBanner(map: map, compact: true, simulatedOutages: model.simulatedOutages)
+                        DemoDataBanner(map: map, compact: true)
                     }
                 }
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
-                        Label("No suitable route found", systemImage: "xmark.octagon")
+                        Label("No route found", systemImage: "xmark.octagon")
                             .font(.title3.weight(.semibold))
                         Text(diagnosis.explanation)
                     }
                     .accessibilityElement(children: .combine)
                     .accessibilityAddTraits(.isHeader)
                 }
-                if model.settings.requireStepFree {
-                    Section("What you can do") {
-                        Text("Step-free routes are on, so the app will not substitute a route with stairs or unconfirmed connections.")
-                        Text("Choose a different destination, or ask building staff about other step-free access.")
-                    }
+                Section("What you can do") {
+                    Text("Choose a different destination, or ask building staff for another way in.")
                 }
             }
         case .sameStartAndDestination:

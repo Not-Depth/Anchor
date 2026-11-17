@@ -44,7 +44,7 @@ struct NearbyView: View {
                 title: "Camera access is off",
                 message: restricted
                     ? "Camera access is restricted on this device (for example by Screen Time), so Nearby can't run. Routes work normally."
-                    : "Nearby needs the camera to read LiDAR depth. You can allow camera access for UB Access Navigator in the Settings app. Routes work without it.",
+                    : "Nearby needs the camera to read LiDAR depth. You can allow camera access for Anchor in the Settings app. Routes work without it.",
                 systemImage: "camera.badge.ellipsis"
             )
             if !restricted {

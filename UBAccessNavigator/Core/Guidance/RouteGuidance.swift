@@ -21,7 +21,7 @@ struct GuidanceStep: Equatable {
     /// Label for the button that confirms this step, e.g. "I've reached Elevator lobby".
     /// `nil` on the final step.
     var confirmLabel: String?
-    /// Facts about the connection: type, recorded length, step-free status, availability.
+    /// Facts about the connection: type, recorded length, availability.
     var details: [String]
 
     /// Text for speech output. Built only from the fields above, so nothing is spoken
@@ -114,7 +114,6 @@ struct RouteGuidance: Equatable {
         } else {
             lines.append("Length not recorded")
         }
-        lines.append(c.stepFree.displayName)
         lines.append(c.availability.displayName)
         return lines
     }

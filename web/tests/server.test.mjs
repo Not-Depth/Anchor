@@ -14,7 +14,10 @@ test('development and built servers serve the app, shared map and modules safely
     try {
       const page = await fetch(base);
       assert.equal(page.status, 200);
-      assert.match(await page.text(), /Anchor · Access Navigator/);
+      assert.match(
+        await page.text(),
+        /Anchor · Campus navigation for blind and low-vision students/,
+      );
       assert.match(page.headers.get('content-security-policy'), /script-src 'self'/);
       const data = await fetch(`${base}/data/demo_map.json`);
       assert.equal((await data.json()).connections.length, 14);

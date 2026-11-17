@@ -1,4 +1,8 @@
-# UB Access Navigator — Milestone 1
+# Anchor: campus navigation for blind and low-vision students
+
+Anchor guides blind and low-vision students around campus with spoken, landmark-by-landmark directions that you confirm one step at a time, plus experimental LiDAR alerts for nearby surfaces.
+
+> The Xcode project, target and source folders are still named `UBAccessNavigator` (the project's original name). The app shows up on the iPhone as **Anchor**.
 
 ## Web version for Windows, macOS, and Linux
 
@@ -23,7 +27,7 @@ A native iPhone app (Swift, SwiftUI) with three tabs:
 
 - **Routes**: pick a starting point and destination. Review the route, then follow landmark-based steps that you confirm one at a time.
 - **Nearby** (experimental): a real ARKit LiDAR depth reading of the surface in the center of the camera view, with optional audio and haptic alerts.
-- **Settings**: independent switches for step-free routes, spoken directions, and nearby audio/haptic alerts. These are saved on the device.
+- **Settings**: independent switches for spoken directions and nearby audio/haptic alerts, plus the alert distance. These are saved on the device.
 
 > **The map is fictional demo data** ("Demo Hall (fictional)"). It does not describe Davis Hall or any real building. Every route screen says so.
 
@@ -33,7 +37,7 @@ A native iPhone app (Swift, SwiftUI) with three tabs:
 
 | Part | Status |
 |---|---|
-| `Core/` (map model, validation, Dijkstra, guidance, depth math, alert logic) | Compiled with Swift 6.0.3 on Linux. **40 unit tests pass** (`swift test`). |
+| `Core/` (map model, validation, Dijkstra, guidance, depth math, alert logic) | Compiled with Swift 6.0.3 on Linux. **39 unit tests pass** (`swift test`). |
 | `demo_map.json` | Loads and passes all validation rules (checked by the tests). |
 | `UBAccessNavigator.xcodeproj` | Written by hand in Xcode 16's project format. Parsed and every internal reference checked, but **not yet opened in Xcode**. |
 | SwiftUI / ARKit / speech code | **Not compiled yet.** It needs Xcode on a Mac. The first build on your Mac is the real check. |
@@ -61,7 +65,7 @@ xcrun --sdk iphoneos --show-sdk-version   # iOS SDK version
 cd UBAccessNavigator
 swift test
 ```
-Expected result: `Executed 40 tests, with 0 failures`.
+Expected result: `Executed 39 tests, with 0 failures`.
 
 ### Step 3. Compile-check both code paths from Terminal
 The ARKit files are compiled **only for real devices**, so a simulator build alone doesn't check them. Run both commands:
@@ -110,7 +114,7 @@ The camera preview uses RealityKit's `ARView` rather than `ARSCNView`. Apple mar
 ```
 UBAccessNavigator/
 ├─ Package.swift              ← lets `swift test` build Core/ on its own
-├─ Tests/NavigatorCoreTests/  ← 40 unit tests for Core/
+├─ Tests/NavigatorCoreTests/  ← 39 unit tests for Core/
 ├─ UBAccessNavigator.xcodeproj
 └─ UBAccessNavigator/         ← everything in here is compiled into the app
    ├─ Core/        Foundation only. No UI, no ARKit. Unit-tested.
@@ -130,14 +134,12 @@ UBAccessNavigator/
 Data flow for a route:
 
 ```
-demo_map.json ─► CampusMap.load ─► MapValidator ─┐
-                                                 ▼
- Settings (step-free?) ─────────────────► RoutePlanner (Dijkstra)
-                                                 │
-                       ┌─────────────────────────┴───────────────┐
+demo_map.json ─► CampusMap.load ─► MapValidator ─► RoutePlanner (Dijkstra)
+                                                         │
+                       ┌─────────────────────────────────┴───────┐
                     Route                              NoRouteDiagnosis
                        │                                         │
-              RouteResultView (summary)              "No suitable route found"
+              RouteResultView (summary)                  "No route found"
                        │                              + what blocks it
               RouteGuidance (you confirm each step)
                        │
@@ -162,22 +164,21 @@ ARView (camera) ─► ARSession ─► DepthFrameDelegate (background queue, �
 ## 5. Routing rules
 
 - **Dijkstra** runs on a directed graph. Each bidirectional connection becomes two edges; a `one_way` connection becomes one.
-- **Unavailable connections are always excluded.**
-- **Step-free mode excludes**, rather than penalizes, anything that isn't `stepFree: "confirmed"`. Stairs are excluded even if the data wrongly marks them confirmed, and the validator rejects that data as well.
+- **Unavailable connections are always excluded.** If a stairwell is closed, the route goes another way, such as the elevator.
 - **Unknown availability** is allowed, but the route shows a "Before you go" warning.
-- **No silent fallback.** If no route meets the preferences, the app shows "No suitable route found" and names the blocking connections. For example: "Elevator A (unavailable)" or "Skybridge to Annex (step-free suitability unknown)". It finds these by re-running Dijkstra with the blocked connections penalized. The relaxed route is used only to explain the failure and is never offered.
-- **Nothing is invented.** Instructions are the authored text from the map. Lengths are shown only when recorded; for example, an elevator has none, so the screen says "Length not recorded." No compass directions or turns are generated.
+- **Closures are explained.** If every route needs a closed connection, the app shows "No route found" and names it, for example "Stairwell A stairs (unavailable)". It finds this by re-running Dijkstra with closed connections penalized. That relaxed route is used only to explain the failure and is never offered.
+- **Nothing is invented.** Instructions are the authored, landmark-based text from the map. Lengths are shown only when recorded; for example, stairs and elevators have none, so the screen says "Length not recorded." No compass directions or turns are generated.
 
 ### Demo scenarios (for the December 4 demo)
 
 | Try | Expected |
 |---|---|
-| North Plaza → Room 201, step-free **off** | Front steps + Stairwell A stairs. Shortest route. |
-| Same, step-free **on** | West ramp + Elevator A. No stairs. |
-| Settings → **Simulate elevator outage**, step-free on | "No suitable route found … Elevator A (unavailable)." Stairs are not offered. |
-| North Plaza → Annex reading room, step-free on | No route, because the skybridge's step-free status is unknown. |
-| Same, step-free off | Route found, with warnings that the skybridge's availability and suitability are unknown. |
+| North Plaza → Room 201 | Front steps + Stairwell A stairs. 7 steps to confirm, each naming a landmark and an arrival cue you can hear or feel. |
+| The same route with VoiceOver on | Each new step is read automatically when you confirm the last one. Repeat and Previous step work. |
+| Room 201 → Room 105 | Uses the authored reverse directions: "Go down the stairs to Floor 1…". |
+| North Plaza → Annex reading room | Route found, with a "Before you go" warning that the skybridge's availability isn't confirmed. |
 | Room 105 → North Plaza vs. North Plaza → Room 105 | The exit-only door is used leaving the building but never entering it (one-way). |
+| Nearby tab, pointed at a wall about 1 m away | A LiDAR reading of about 1 m, plus a sound or vibration if alerts are on. |
 
 ---
 
@@ -191,15 +192,13 @@ Each **connection** records:
 | `type` | `corridor`, `door`, `stairs`, `ramp`, `elevator`, `bridge` |
 | `lengthMeters` | Recorded length, or omitted if unknown. Displayed only. |
 | `routingCost` | Optional Dijkstra weight. Defaults to `lengthMeters`; use it for things like elevator waiting time. Never shown as a distance. |
-| `stepFree` | `confirmed` / `unsuitable` / `unknown`. Physical suitability. |
-| `availability` | `available` / `unavailable` / `unknown`. Right-now status, kept separate from suitability. |
+| `availability` | `available` / `unavailable` / `unknown`. Right-now status, such as a stairwell closed for repairs. |
 | `verification` | `status` (`simulated` / `unverified` / `verified`), `source`, `checkedOn`, `checkedBy`, `notes` |
 | `instructions` | `forward` text, plus `reverse` text (required for bidirectional connections) |
 
 The validator enforces the honesty rules:
 - A `fictional_demo` map may only contain `simulated` connections.
 - A `verified` connection needs `checkedOn` and `checkedBy`.
-- Stairs can never be `confirmed` step-free.
 
 When real survey data arrives, add a new map file with `dataStatus: "surveyed_unverified"` instead of editing the demo map.
 

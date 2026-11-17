@@ -1,13 +1,5 @@
 import Foundation
 
-/// What the person needs from a route. More preferences can be added later
-/// (for example, avoiding heavy doors) without changing the planner's shape.
-struct RoutePreferences: Equatable {
-    /// When true, the route may only use connections confirmed step-free.
-    /// Stairs and connections marked unsuitable or unknown are excluded, not penalized.
-    var requireStepFree: Bool
-}
-
 /// One traversal of one connection, in the direction actually traveled.
 struct RouteLeg: Equatable, Identifiable {
     var id: Int { index }
@@ -32,7 +24,6 @@ struct Route: Equatable {
     var start: Landmark
     var destination: Landmark
     var legs: [RouteLeg]
-    var preferences: RoutePreferences
     var mapName: String
     var mapDataStatus: MapDataStatus
     var mapDisclaimer: String
@@ -78,25 +69,17 @@ struct Route: Equatable {
             if leg.connection.verification.status == .unverified {
                 result.append("\(name): details have not been verified on site.")
             }
-            if !preferences.requireStepFree && leg.connection.stepFree == .unknown {
-                result.append("\(name): step-free suitability is unknown.")
-            }
         }
         return result
     }
 }
 
-/// Why no route could be offered. Used to explain the failure instead of silently
-/// falling back to a route the person did not ask for.
+/// Why no route could be offered. Used to explain the failure instead of just saying "no route".
 struct NoRouteDiagnosis: Equatable {
     enum Reason: Equatable {
-        /// A route meeting the preferences exists on paper, but uses connections that are
-        /// currently unavailable (for example, an elevator out of service).
+        /// A route exists on paper, but it uses connections that are currently unavailable
+        /// (for example, a corridor closed for repairs).
         case blockedByUnavailableConnections
-        /// The only routes that exist use connections that are not confirmed step-free.
-        case blockedByStepFreeRequirement
-        /// Routes exist only if both unavailable and non-step-free connections were used.
-        case blockedByBoth
         /// The two landmarks are not connected at all in this map.
         case notConnected
     }
@@ -106,30 +89,13 @@ struct NoRouteDiagnosis: Equatable {
     var blockingConnections: [Connection]
 
     var explanation: String {
-        let names = blockingConnections.map { describe($0) }.joined(separator: "; ")
         switch reason {
         case .blockedByUnavailableConnections:
-            return "A route meeting your preferences needs connections that are currently unavailable: \(names)."
-        case .blockedByStepFreeRequirement:
-            return "Every route in this map uses at least one connection that is not confirmed step-free: \(names)."
-        case .blockedByBoth:
-            return "Routes exist only through connections that are unavailable or not confirmed step-free: \(names)."
+            let names = blockingConnections.map { "\($0.name) (unavailable)" }.joined(separator: "; ")
+            return "Every route to this place needs a connection that is currently unavailable: \(names)."
         case .notConnected:
             return "These two places are not connected in this map."
         }
-    }
-
-    private func describe(_ c: Connection) -> String {
-        var parts: [String] = []
-        if c.availability == .unavailable { parts.append("unavailable") }
-        if c.type == .stairs {
-            parts.append("stairs")
-        } else if c.stepFree == .unsuitable {
-            parts.append("not suitable for step-free travel")
-        } else if c.stepFree == .unknown {
-            parts.append("step-free suitability unknown")
-        }
-        return parts.isEmpty ? c.name : "\(c.name) (\(parts.joined(separator: ", ")))"
     }
 }
 

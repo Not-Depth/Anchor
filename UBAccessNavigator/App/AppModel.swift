@@ -10,8 +10,8 @@ final class AppModel {
     let haptics: HapticsService
     let nearby: NearbyViewModel
 
-    /// The map as loaded from disk, before any demo simulation switches are applied.
-    private(set) var baseMap: CampusMap?
+    /// The campus map, as loaded from disk. `nil` if it failed to load or validate.
+    private(set) var map: CampusMap?
     /// Shown instead of the route UI if the map failed to load or validate.
     private(set) var mapLoadError: String?
 
@@ -24,33 +24,15 @@ final class AppModel {
         self.haptics = haptics
         self.nearby = NearbyViewModel(settings: settings, speech: speech, haptics: haptics)
         do {
-            baseMap = try CampusMap.load(in: bundle)
+            map = try CampusMap.load(in: bundle)
         } catch {
             mapLoadError = String(describing: error)
         }
     }
 
-    /// The map routing actually uses: the base map plus demo simulation switches.
-    var activeMap: CampusMap? {
-        guard let baseMap else { return nil }
-        guard settings.simulateElevatorOutage else { return baseMap }
-        var overrides: [String: Availability] = [:]
-        for connection in baseMap.connections where connection.type == .elevator {
-            overrides[connection.id] = .unavailable
-        }
-        return baseMap.applying(availabilityOverrides: overrides)
-    }
-
-    /// Names of connections a demo switch has made unavailable, for on-screen labels.
-    var simulatedOutages: [String] {
-        guard settings.simulateElevatorOutage, let baseMap else { return [] }
-        return baseMap.connections.filter { $0.type == .elevator }.map(\.name)
-    }
-
     func planRoute(_ request: RouteRequest) -> Result<Route, RouteFailure>? {
-        guard let map = activeMap else { return nil }
-        let preferences = RoutePreferences(requireStepFree: settings.requireStepFree)
-        return RoutePlanner(map: map).route(from: request.startID, to: request.destinationID, preferences: preferences)
+        guard let map else { return nil }
+        return RoutePlanner(map: map).route(from: request.startID, to: request.destinationID)
     }
 
     /// Speaks only if the person has spoken directions turned on.

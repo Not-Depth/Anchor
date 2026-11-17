@@ -55,7 +55,10 @@ test('summary and full-screen manual guidance match the native screen flow', asy
   await locations(page);
   await findRoute(page);
   await expect(page.locator('#routes-view')).toBeHidden();
-  await expect(page.locator('#result')).toContainText('Shortest (may use stairs)');
+  await expect(page.locator('#result')).toContainText('2 stairs');
+  await expect(page.locator('#result')).toContainText(
+    '35 m (simulated), plus 1 without a recorded length',
+  );
   await expect(page.locator('dt', { hasText: 'Steps to confirm' }).locator('..')).toContainText(
     '7',
   );
@@ -94,42 +97,24 @@ test('ending guidance requires confirmation and can be cancelled', async ({ page
   await expect(page.locator('#guidance-view')).toBeHidden();
 });
 
-test('settings recalculate the summary and persist independently', async ({ page }) => {
-  await locations(page);
-  await page.locator('#route-step-free').check();
-  await findRoute(page);
-  await expect(page.locator('#result')).toContainText(
-    '87 m (simulated), plus 1 without a recorded length',
-  );
-  await expect(page.locator('.route-steps li')).toHaveCount(7);
+test('settings persist independently and no step-free controls remain', async ({ page }) => {
+  await expect(page.getByRole('switch', { name: /step-free/i })).toHaveCount(0);
   await page.getByRole('link', { name: 'Settings', exact: true }).click();
-  await page.getByRole('switch', { name: 'Simulate elevator outage', exact: true }).check();
-  await page.getByRole('link', { name: 'Routes', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'No suitable route found' })).toBeVisible();
-  await expect(page.locator('#result')).toContainText('Elevator A (unavailable)');
-  await expect(page.getByRole('button', { name: 'Start guidance', exact: true })).toHaveCount(0);
-  await page.getByRole('link', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('switch', { name: /step-free/i })).toHaveCount(0);
+  await expect(page.getByRole('switch', { name: /elevator outage/i })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'About Anchor', exact: true })).toBeVisible();
+  await page.getByRole('switch', { name: 'Speak directions', exact: true }).check();
   await page.reload();
-  await expect(
-    page.getByRole('switch', { name: 'Simulate elevator outage', exact: true }),
-  ).toBeChecked();
-  await expect(
-    page.getByRole('switch', { name: 'Step-free routes only', exact: true }),
-  ).toBeChecked();
+  await page.getByRole('link', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('switch', { name: 'Speak directions', exact: true })).toBeChecked();
   await expect(page.getByRole('switch', { name: 'Audio alerts', exact: true })).not.toBeChecked();
 });
 
-test('skybridge warnings remain visible with the native summary layout', async ({ page }) => {
+test('skybridge warning remains visible with the native summary layout', async ({ page }) => {
   await locations(page, 'Annex reading room (via skybridge)');
   await findRoute(page);
   await expect(page.locator('#result')).toContainText('current availability is not confirmed');
-  await expect(page.locator('#result')).toContainText('step-free suitability is unknown');
-  await backToPlanner(page);
-  await page.locator('#route-step-free').check();
-  await findRoute(page);
-  await expect(page.locator('#result')).toContainText(
-    'Skybridge to Annex (step-free suitability unknown)',
-  );
+  await expect(page.locator('#result')).not.toContainText('step-free');
 });
 
 test('voice testing, repeat and pause controls work without speaking during automation', async ({
@@ -210,10 +195,10 @@ test('denied storage and unavailable speech do not prevent routing', async ({ pa
   });
   await page.reload();
   await locations(page);
-  await page.locator('#route-step-free').check();
   await findRoute(page);
-  await expect(page.locator('#result')).toContainText('87 m (simulated)');
+  await expect(page.locator('#result')).toContainText('35 m (simulated)');
   await page.getByRole('link', { name: 'Settings', exact: true }).click();
+  await page.locator('#alert-distance').selectOption('1.5');
   await expect(page.locator('#settings-status')).toContainText('Storage is unavailable');
   await expect(page.getByRole('button', { name: 'Test voice', exact: true })).toBeDisabled();
 });

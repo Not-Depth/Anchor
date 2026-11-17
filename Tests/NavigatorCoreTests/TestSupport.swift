@@ -31,13 +31,12 @@ enum TestSupport {
         type: ConnectionType = .corridor,
         length: Double? = 10,
         cost: Double? = nil,
-        stepFree: StepFreeSuitability = .confirmed,
         availability: Availability = .available,
         direction: Directionality = .bidirectional
     ) -> Connection {
         Connection(
             id: id, name: id, from: from, to: to, type: type, direction: direction,
-            lengthMeters: length, routingCost: cost, stepFree: stepFree, availability: availability,
+            lengthMeters: length, routingCost: cost, availability: availability,
             verification: Verification(status: .simulated, source: "test"),
             instructions: Instructions(
                 forward: "Go from \(from) to \(to).",
@@ -52,6 +51,16 @@ enum TestSupport {
             disclaimer: "Test data", floors: [Floor(id: "f1", name: "Floor 1", level: 1)],
             landmarks: landmarks, connections: connections
         )
+    }
+
+    /// A copy of `map` with the given connections set to `availability`, e.g. to simulate
+    /// a closed stairwell in a test.
+    static func setting(_ availability: Availability, on ids: Set<String>, in map: CampusMap) -> CampusMap {
+        var copy = map
+        for index in copy.connections.indices where ids.contains(copy.connections[index].id) {
+            copy.connections[index].availability = availability
+        }
+        return copy
     }
 }
 

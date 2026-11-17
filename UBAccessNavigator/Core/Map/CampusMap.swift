@@ -81,8 +81,6 @@ struct Connection: Codable, Equatable, Identifiable {
     /// a connection "more expensive" than its length (for example, elevator waiting time).
     /// It is never shown or spoken as a distance.
     var routingCost: Double?
-    /// Physical suitability for wheelchair users. Separate from `availability`.
-    var stepFree: StepFreeSuitability
     /// Whether the connection can be used right now (e.g. an elevator out of service).
     var availability: Availability
     var verification: Verification
@@ -121,24 +119,8 @@ enum Directionality: String, Codable, Equatable {
     case oneWay = "one_way"
 }
 
-/// Physical suitability for step-free travel. An elevator, ramp or bridge is NOT assumed
-/// to be suitable just because of its type: someone has to confirm it.
-enum StepFreeSuitability: String, Codable, Equatable {
-    case confirmed
-    case unsuitable
-    case unknown
-
-    var displayName: String {
-        switch self {
-        case .confirmed: return "Step-free: confirmed"
-        case .unsuitable: return "Step-free: not suitable"
-        case .unknown: return "Step-free: unknown"
-        }
-    }
-}
-
-/// Current availability. Kept separate from physical suitability: a confirmed step-free
-/// elevator can still be out of service today.
+/// Current availability, such as an elevator out of service or a corridor closed for
+/// repairs. Unavailable connections are never used in a route.
 enum Availability: String, Codable, Equatable {
     case available
     case unavailable
@@ -207,17 +189,5 @@ extension CampusMap {
 
     var isFictional: Bool {
         dataStatus == .fictionalDemo
-    }
-
-    /// Returns a copy with some connections' availability replaced. Used for the
-    /// "simulate elevator outage" demo switch; physical suitability is untouched.
-    func applying(availabilityOverrides overrides: [String: Availability]) -> CampusMap {
-        var copy = self
-        for index in copy.connections.indices {
-            if let override = overrides[copy.connections[index].id] {
-                copy.connections[index].availability = override
-            }
-        }
-        return copy
     }
 }

@@ -11,7 +11,7 @@ struct RoutesView: View {
     var body: some View {
         NavigationStack(path: $path) {
             Group {
-                if let map = model.activeMap {
+                if let map = model.map {
                     form(for: map)
                 } else {
                     ContentUnavailableView(
@@ -29,11 +29,9 @@ struct RoutesView: View {
     }
 
     private func form(for map: CampusMap) -> some View {
-        @Bindable var settings = model.settings
-
-        return Form {
+        Form {
             Section {
-                DemoDataBanner(map: map, simulatedOutages: model.simulatedOutages)
+                DemoDataBanner(map: map)
             }
 
             Section {
@@ -45,14 +43,6 @@ struct RoutesView: View {
                 Text("Where are you?")
             } footer: {
                 Text("Choose the landmark you are at now. You'll confirm it before guidance starts; the app does not track your position indoors.")
-            }
-
-            Section {
-                Toggle("Step-free route", isOn: $settings.requireStepFree)
-            } footer: {
-                Text(settings.requireStepFree
-                     ? "Only connections confirmed step-free are used. Stairs and anything unconfirmed are excluded."
-                     : "The shortest route may include stairs.")
             }
 
             Section {
