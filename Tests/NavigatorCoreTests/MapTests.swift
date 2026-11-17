@@ -31,15 +31,10 @@ final class MapTests: XCTestCase {
         XCTAssertTrue(types.isSuperset(of: [.stairs, .elevator, .ramp, .bridge, .corridor]))
     }
 
-    func testValidatorRejectsStairsMarkedStepFree() {
-        var map = TestSupport.map(
-            landmarks: [TestSupport.landmark("a"), TestSupport.landmark("b")],
-            connections: [TestSupport.connection("s", "a", "b", type: .stairs, stepFree: .confirmed)]
-        )
-        XCTAssertTrue(MapValidator.validate(map).contains { $0.message.contains("stairs but is marked step-free") })
-
-        map.connections[0].stepFree = .unsuitable
-        XCTAssertEqual(MapValidator.validate(map).filter { $0.severity == .error }, [])
+    func testDemoMapHasNoWheelchairOnlyFields() throws {
+        let json = String(decoding: try TestSupport.demoMapData(), as: UTF8.self)
+        XCTAssertFalse(json.contains("stepFree"))
+        XCTAssertFalse(json.localizedCaseInsensitiveContains("step-free"))
     }
 
     func testValidatorRejectsVerifiedClaimsInFictionalMap() {
@@ -74,13 +69,5 @@ final class MapTests: XCTestCase {
             }
             XCTAssertTrue(message.contains("missing key"))
         }
-    }
-
-    func testAvailabilityOverrideLeavesSuitabilityUntouched() throws {
-        let map = try TestSupport.demoMap()
-        let changed = map.applying(availabilityOverrides: ["elevator-a": .unavailable])
-        let elevator = try XCTUnwrap(changed.connections.first { $0.id == "elevator-a" })
-        XCTAssertEqual(elevator.availability, .unavailable)
-        XCTAssertEqual(elevator.stepFree, .confirmed)
     }
 }

@@ -4,9 +4,7 @@ import XCTest
 final class GuidanceTests: XCTestCase {
     private func demoGuidance() throws -> RouteGuidance {
         let planner = RoutePlanner(map: try TestSupport.demoMap())
-        let route = try XCTUnwrap(
-            planner.route(from: "plaza", to: "room-201", preferences: RoutePreferences(requireStepFree: true)).successValue
-        )
+        let route = try XCTUnwrap(planner.route(from: "plaza", to: "room-201").successValue)
         return RouteGuidance(route: route)
     }
 
@@ -23,7 +21,7 @@ final class GuidanceTests: XCTestCase {
         var guidance = try demoGuidance()
         guidance.confirmCurrentStep()
         XCTAssertEqual(guidance.current.kind, .travel(legIndex: 0))
-        XCTAssertTrue(guidance.current.instruction.contains("ramp"))
+        XCTAssertTrue(guidance.current.instruction.contains("five front steps"))
         XCTAssertEqual(guidance.current.confirmLabel, "I've reached Main Entrance lobby")
         XCTAssertEqual(guidance.previous?.kind, .confirmStart)
 
@@ -42,14 +40,20 @@ final class GuidanceTests: XCTestCase {
         XCTAssertNil(guidance.next)
     }
 
-    func testDetailsNeverInventLengthForElevator() throws {
+    func testDetailsNeverInventLengthForStairs() throws {
         let guidance = try demoGuidance()
-        let elevatorStep = try XCTUnwrap(guidance.steps.first { $0.details.first?.hasPrefix("Elevator") == true })
-        XCTAssertTrue(elevatorStep.details.contains("Length not recorded"))
-        XCTAssertFalse(elevatorStep.spokenText.contains(" m "))
+        let stairsStep = try XCTUnwrap(guidance.steps.first { $0.details.first == "Stairs: Stairwell A stairs" })
+        XCTAssertTrue(stairsStep.details.contains("Length not recorded"))
+        XCTAssertFalse(stairsStep.spokenText.contains(" m "))
 
-        let rampStep = guidance.steps[1]
-        XCTAssertTrue(rampStep.details.contains("Recorded length: about 18 m (simulated)"))
+        let frontStepsStep = guidance.steps[1]
+        XCTAssertTrue(frontStepsStep.details.contains("Recorded length: about 6 m (simulated)"))
+    }
+
+    func testDetailsDoNotMentionStepFreeStatus() throws {
+        let guidance = try demoGuidance()
+        let allDetails = guidance.steps.flatMap(\.details).joined(separator: " ")
+        XCTAssertFalse(allDetails.localizedCaseInsensitiveContains("step-free"))
     }
 
     func testSpokenTextOnlyUsesAuthoredContent() throws {

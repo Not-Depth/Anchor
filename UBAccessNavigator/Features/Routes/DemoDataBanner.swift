@@ -4,7 +4,6 @@ import SwiftUI
 struct DemoDataBanner: View {
     let map: CampusMap
     var compact = false
-    var simulatedOutages: [String] = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -20,11 +19,6 @@ struct DemoDataBanner: View {
                 Text(map.disclaimer)
                     .font(.subheadline)
                     .fixedSize(horizontal: false, vertical: true)
-            }
-
-            ForEach(simulatedOutages, id: \.self) { name in
-                Text("Simulated: \(name) is out of service (demo setting).")
-                    .font(.subheadline.weight(.semibold))
             }
         }
         .padding(.vertical, 4)

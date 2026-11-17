@@ -146,10 +146,6 @@ main {
   font-size: 21px;
   line-height: 1;
 }
-.outage-notice {
-  font-weight: 600;
-  margin-top: 7px;
-}
 .picker-row,
 .switch-row,
 .select-row,

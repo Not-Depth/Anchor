@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#f2f2f7" />
     <meta
       name="description"
-      content="A browser companion to the UB Access Navigator iPhone demo. Uses the shared fictional map; does not execute Swift code."
+      content="A browser companion to the Anchor iPhone demo: campus navigation for blind and low-vision students. Uses the shared fictional map; does not execute Swift code."
     />
-    <title>Anchor · Access Navigator</title>
+    <title>Anchor · Campus navigation for blind and low-vision students</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css" />
     <script type="module" src="./src/app.js"></script>
@@ -30,7 +30,6 @@
               <section class="group demo-banner">
                 <h2><span class="warning-icon" aria-hidden="true">⚠</span> Fictional demo data</h2>
                 <p id="disclaimer"></p>
-                <p class="outage-notice" hidden></p>
               </section>
               <section class="form-section" aria-labelledby="places-heading">
                 <h2 id="places-heading" class="section-label">Where are you?</h2>
@@ -61,21 +60,6 @@
                   app does not track your position indoors.
                 </p>
               </section>
-              <section class="form-section">
-                <div class="group">
-                  <label class="switch-row"
-                    ><span>Step-free route</span
-                    ><input
-                      id="route-step-free"
-                      type="checkbox"
-                      role="switch"
-                      data-setting="requireStepFree"
-                  /></label>
-                </div>
-                <p id="step-free-description" class="section-footer">
-                  The shortest route may include stairs.
-                </p>
-              </section>
               <button
                 id="find-route"
                 class="button primary full"
@@ -88,7 +72,6 @@
               <p id="search-hint" class="section-footer">
                 Choose a starting point and destination first.
               </p>
-              <p id="route-notice" class="section-footer" role="status"></p>
             </form>
           </section>
           <section id="picker-view" aria-labelledby="picker-heading" hidden>
@@ -178,19 +161,6 @@
             </header>
             <div class="form-content">
               <section class="form-section">
-                <h2 class="section-label">Routes</h2>
-                <div class="group">
-                  <label class="switch-row"
-                    ><span>Step-free routes only</span
-                    ><input type="checkbox" role="switch" data-setting="requireStepFree"
-                  /></label>
-                </div>
-                <p class="section-footer">
-                  Excludes stairs and any connection not confirmed step-free. If no such route
-                  exists, the app says so instead of offering stairs.
-                </p>
-              </section>
-              <section class="form-section">
                 <h2 class="section-label">Spoken directions</h2>
                 <div class="group">
                   <label class="switch-row"
@@ -229,22 +199,10 @@
                 </div>
                 <p class="section-footer">
                   In this browser, alerts apply only to the optional Nearby simulation. No objects
-                  or hazards are detected. Keep using your usual mobility aids.
+                  or hazards are detected. Keep using your cane, guide dog or other usual mobility
+                  aids.
                 </p>
                 <p id="vibration-support" class="section-footer"></p>
-              </section>
-              <section class="form-section">
-                <h2 class="section-label">Demo simulation</h2>
-                <div class="group">
-                  <label class="switch-row"
-                    ><span>Simulate elevator outage</span
-                    ><input type="checkbox" role="switch" data-setting="simulateElevatorOutage"
-                  /></label>
-                </div>
-                <p class="section-footer">
-                  Marks every elevator in the fictional demo map as unavailable, to show how the app
-                  handles a missing step-free route. Does not reflect any real elevator.
-                </p>
               </section>
               <section class="form-section">
                 <h2 class="section-label">Map data</h2>
@@ -262,8 +220,17 @@
                   <p id="map-disclaimer" class="map-disclaimer"></p>
                 </div>
               </section>
+              <section class="form-section">
+                <h2 class="section-label">About Anchor</h2>
+                <div class="group padded">
+                  <p>
+                    Anchor helps blind and low-vision students get around campus with spoken,
+                    landmark-by-landmark directions.
+                  </p>
+                </div>
+              </section>
               <p id="settings-status" class="section-footer" role="status"></p>
-              <p class="edition-note">UB Access Navigator · Web companion</p>
+              <p class="edition-note">Anchor · Web companion</p>
             </div>
           </section>
         </div>

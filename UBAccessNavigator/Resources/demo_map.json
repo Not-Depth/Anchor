@@ -3,7 +3,7 @@
   "id": "demo-hall-fictional",
   "name": "Demo Hall (fictional)",
   "dataStatus": "fictional_demo",
-  "disclaimer": "FICTIONAL DEMO DATA. This map does not describe Davis Hall or any other real building. All distances, accessibility details and availability are simulated for demonstration only.",
+  "disclaimer": "FICTIONAL DEMO DATA. This map does not describe Davis Hall or any other real building. All landmarks, directions, distances and availability are simulated for demonstration only.",
   "floors": [
     { "id": "f1", "name": "Floor 1", "level": 1 },
     { "id": "f2", "name": "Floor 2", "level": 2 }
@@ -139,7 +139,6 @@
       "type": "stairs",
       "direction": "bidirectional",
       "lengthMeters": 6,
-      "stepFree": "unsuitable",
       "availability": "available",
       "verification": { "status": "simulated", "source": "Fictional demo data" },
       "instructions": {
@@ -155,7 +154,6 @@
       "type": "ramp",
       "direction": "bidirectional",
       "lengthMeters": 18,
-      "stepFree": "confirmed",
       "availability": "available",
       "verification": { "status": "simulated", "source": "Fictional demo data" },
       "instructions": {
@@ -171,7 +169,6 @@
       "type": "door",
       "direction": "bidirectional",
       "lengthMeters": 8,
-      "stepFree": "confirmed",
       "availability": "available",
       "verification": { "status": "simulated", "source": "Fictional demo data" },
       "instructions": {
@@ -187,7 +184,6 @@
       "type": "corridor",
       "direction": "bidirectional",
       "lengthMeters": 6,
-      "stepFree": "confirmed",
       "availability": "available",
       "verification": { "status": "simulated", "source": "Fictional demo data" },
       "instructions": {
@@ -203,7 +199,6 @@
       "type": "corridor",
       "direction": "bidirectional",
       "lengthMeters": 25,
-      "stepFree": "confirmed",
       "availability": "available",
       "verification": { "status": "simulated", "source": "Fictional demo data" },
       "instructions": {
@@ -219,7 +214,6 @@
       "type": "corridor",
       "direction": "bidirectional",
       "lengthMeters": 10,
-      "stepFree": "confirmed",
       "availability": "available",
       "verification": { "status": "simulated", "source": "Fictional demo data" },
       "instructions": {
@@ -235,7 +229,6 @@
       "type": "door",
       "direction": "bidirectional",
       "lengthMeters": 7,
-      "stepFree": "confirmed",
       "availability": "available",
       "verification": { "status": "simulated", "source": "Fictional demo data" },
       "instructions": {
@@ -251,7 +244,6 @@
       "type": "door",
       "direction": "one_way",
       "lengthMeters": 30,
-      "stepFree": "confirmed",
       "availability": "available",
       "verification": {
         "status": "simulated",
@@ -270,7 +262,6 @@
       "type": "stairs",
       "direction": "bidirectional",
       "routingCost": 12,
-      "stepFree": "unsuitable",
       "availability": "available",
       "verification": { "status": "simulated", "source": "Fictional demo data" },
       "instructions": {
@@ -286,7 +277,6 @@
       "type": "elevator",
       "direction": "bidirectional",
       "routingCost": 30,
-      "stepFree": "confirmed",
       "availability": "available",
       "verification": {
         "status": "simulated",
@@ -306,7 +296,6 @@
       "type": "corridor",
       "direction": "bidirectional",
       "lengthMeters": 9,
-      "stepFree": "confirmed",
       "availability": "available",
       "verification": { "status": "simulated", "source": "Fictional demo data" },
       "instructions": {
@@ -322,7 +311,6 @@
       "type": "corridor",
       "direction": "bidirectional",
       "lengthMeters": 20,
-      "stepFree": "confirmed",
       "availability": "available",
       "verification": { "status": "simulated", "source": "Fictional demo data" },
       "instructions": {
@@ -338,7 +326,6 @@
       "type": "door",
       "direction": "bidirectional",
       "lengthMeters": 6,
-      "stepFree": "confirmed",
       "availability": "available",
       "verification": { "status": "simulated", "source": "Fictional demo data" },
       "instructions": {
@@ -354,12 +341,11 @@
       "type": "bridge",
       "direction": "bidirectional",
       "lengthMeters": 35,
-      "stepFree": "unknown",
       "availability": "unknown",
       "verification": {
         "status": "simulated",
         "source": "Fictional demo data",
-        "notes": "Deliberately left unknown to demonstrate that unknown is never treated as step-free."
+        "notes": "Availability deliberately left unknown to demonstrate the route warning."
       },
       "instructions": {
         "forward": "Follow the glass-walled skybridge to its end, then go through the doors into the Annex reading room.",

@@ -2,7 +2,7 @@ const nonempty = (value) => typeof value === 'string' && value.trim().length > 0
 const positive = (value) => Number.isFinite(value) && value > 0;
 
 // Reject incomplete data before routing; skipping a broken connection can silently
-// turn a data error into a misleading "no accessible route" result.
+// turn a data error into a misleading "no route" result.
 export function validateMap(map) {
   const errors = [];
   if (!map || typeof map !== 'object') return ['Map must be an object.'];
@@ -62,8 +62,6 @@ export function validateMap(map) {
       errors.push(`${label} has an unknown type.`);
     if (!['bidirectional', 'one_way'].includes(c.direction))
       errors.push(`${label} has an unknown direction.`);
-    if (!['confirmed', 'unsuitable', 'unknown'].includes(c.stepFree))
-      errors.push(`${label} has invalid step-free suitability.`);
     if (!['available', 'unavailable', 'unknown'].includes(c.availability))
       errors.push(`${label} has invalid availability.`);
     if (c.lengthMeters != null && (!Number.isFinite(c.lengthMeters) || c.lengthMeters < 0))
@@ -75,8 +73,6 @@ export function validateMap(map) {
     if (!nonempty(c.instructions?.forward)) errors.push(`${label} needs a forward instruction.`);
     if (c.direction === 'bidirectional' && !nonempty(c.instructions?.reverse))
       errors.push(`${label} needs a reverse instruction.`);
-    if (c.type === 'stairs' && c.stepFree === 'confirmed')
-      errors.push(`${label} is stairs but claims step-free suitability.`);
     const v = c.verification;
     if (!v || !['simulated', 'unverified', 'verified'].includes(v.status) || !nonempty(v.source)) {
       errors.push(`${label} needs valid verification metadata.`);
@@ -88,14 +84,4 @@ export function validateMap(map) {
     }
   }
   return errors;
-}
-
-export function withElevatorOutage(map, enabled) {
-  return {
-    ...map,
-    connections: map.connections.map((c) => ({
-      ...c,
-      availability: enabled && c.type === 'elevator' ? 'unavailable' : c.availability,
-    })),
-  };
 }

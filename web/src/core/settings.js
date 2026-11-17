@@ -1,12 +1,10 @@
 export const SETTINGS_KEY = 'anchor.web.settings.v1';
 export const distanceOptions = [0.5, 0.75, 1, 1.5, 2];
 export const defaults = Object.freeze({
-  requireStepFree: false,
   spokenDirections: false,
   nearbyAudioAlerts: false,
   nearbyHapticAlerts: false,
   nearbyAlertDistance: 1,
-  simulateElevatorOutage: false,
 });
 
 export function loadSettings(storage) {

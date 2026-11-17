@@ -19,8 +19,8 @@ struct MapIssue: Equatable, CustomStringConvertible {
 
 /// Checks a map for mistakes that would make routing wrong or misleading.
 ///
-/// The most important rules are about honesty: stairs can never be marked step-free,
-/// and a fictional map can never claim on-site verification.
+/// The most important rule is about honesty: a fictional map can never claim on-site
+/// verification, and verified data must say who checked it and when.
 enum MapValidator {
     static func validate(_ map: CampusMap) -> [MapIssue] {
         var issues: [MapIssue] = []
@@ -99,11 +99,6 @@ enum MapValidator {
         }
         if c.direction == .oneWay, c.instructions.reverse != nil {
             issues.append(.warning("\(label) is one-way; its reverse instruction will never be used."))
-        }
-
-        // Stairs are never step-free, whatever the data says.
-        if c.type == .stairs && c.stepFree == .confirmed {
-            issues.append(.error("\(label) is stairs but is marked step-free confirmed."))
         }
 
         // Verification honesty.
