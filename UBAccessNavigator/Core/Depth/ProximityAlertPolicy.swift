@@ -17,6 +17,9 @@ struct ProximityAlertPolicy {
         case readingsRestored
     }
 
+    /// Alert distances offered in Settings, in meters.
+    static let alertDistanceOptions: [Double] = [0.5, 0.75, 1.0, 1.5, 2.0]
+
     var alertDistance: Double
     var hysteresis: Double = 0.25
     var repeatInterval: TimeInterval = 3.0

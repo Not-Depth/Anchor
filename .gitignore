@@ -9,3 +9,6 @@ DerivedData/
 
 # macOS
 .DS_Store
+
+# Secrets (the ElevenLabs key is passed as an environment variable; never commit it)
+.env

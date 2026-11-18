@@ -37,10 +37,10 @@ A native iPhone app (Swift, SwiftUI) with three tabs:
 
 | Part | Status |
 |---|---|
-| `Core/` (map model, validation, Dijkstra, guidance, depth math, alert logic) | Compiled with Swift 6.0.3 on Linux. **39 unit tests pass** (`swift test`). |
+| `Core/` (map model, validation, Dijkstra, guidance, depth math, alert logic, spoken phrases) | Compiled with Swift 6.0.3 on Linux. **50 unit tests pass** (`swift test`). |
 | `demo_map.json` | Loads and passes all validation rules (checked by the tests). |
 | `UBAccessNavigator.xcodeproj` | Written by hand in Xcode 16's project format. Parsed and every internal reference checked, but **not yet opened in Xcode**. |
-| SwiftUI / ARKit / speech code | **Not compiled yet.** It needs Xcode on a Mac. The first build on your Mac is the real check. |
+| SwiftUI / ARKit / speech code | **Not compiled yet.** It needs Xcode on a Mac. The first build on your Mac is the real check. (`SpeechService`, `VoiceClipLibrary`, `AppSettings` and `AppModel` were type-checked on Linux against stand-ins for AVFoundation/UIKit, which catches typos but not framework mistakes.) |
 
 If the first build shows errors, paste them back and they can be fixed quickly.
 
@@ -113,16 +113,19 @@ The camera preview uses RealityKit's `ARView` rather than `ARSCNView`. Apple mar
 
 ```
 UBAccessNavigator/
-├─ Package.swift              ← lets `swift test` build Core/ on its own
-├─ Tests/NavigatorCoreTests/  ← 39 unit tests for Core/
+├─ Package.swift              ← lets `swift test` build Core/ on its own, plus the voice clip generator
+├─ Tests/NavigatorCoreTests/  ← 50 unit tests for Core/
+├─ Tools/VoiceClips/          ← `swift run anchor-voice-clips`: records the Anchor voice (not part of the app)
 ├─ UBAccessNavigator.xcodeproj
 └─ UBAccessNavigator/         ← everything in here is compiled into the app
    ├─ Core/        Foundation only. No UI, no ARKit. Unit-tested.
    │  ├─ Map/        CampusMap model, MapValidator, JSON loading
    │  ├─ Routing/    RoutePlanner (Dijkstra) + Route + NoRouteDiagnosis
    │  ├─ Guidance/   RouteGuidance: step-by-step state machine
-   │  └─ Depth/      DepthAnalyzer (pure math) + ProximityAlertPolicy
-   ├─ Services/    AppSettings (UserDefaults), SpeechService, HapticsService
+   │  ├─ Depth/      DepthAnalyzer (pure math) + ProximityAlertPolicy
+   │  └─ Speech/     SpokenPhrases (everything the app can say) + VoiceClipManifest
+   ├─ Services/    AppSettings (UserDefaults), SpeechService, VoiceClipLibrary, HapticsService
+   ├─ Resources/   demo_map.json, Voice/ (recorded Anchor voice clips + voice_manifest.json)
    ├─ Features/
    │  ├─ Routes/     RoutesView → RouteResultView → GuidanceView, schematic
    │  ├─ Nearby/     NearbyView, NearbyViewModel, ARKit session + camera view
@@ -212,10 +215,28 @@ When real survey data arrives, add a new map file with `dataStatus: "surveyed_un
   - Each new guidance step moves VoiceOver focus to the instruction, so VoiceOver reads it. The app doesn't also speak it, to avoid two voices at once.
   - Other speech (Repeat, nearby alerts) goes through VoiceOver announcements.
   - The camera preview and schematic are hidden from VoiceOver or summarized in one line, since the text conveys everything.
-- **Without VoiceOver:** `AVSpeechSynthesizer` speaks using the navigation prompt audio mode and ducks other audio.
+- **Without VoiceOver:** the recorded Anchor voice plays (see below), or the iPhone voice if chosen in Settings. Both use the navigation prompt audio mode and duck other audio.
 - The colors are system colors with no custom palette, so contrast follows iOS in both light and dark mode.
 
 **Please test on the device:** VoiceOver on, the largest accessibility text size, Bold Text, and Reduce Motion.
+
+### The Anchor voice (ElevenLabs)
+
+When VoiceOver is off, directions and alerts are spoken by **Matilda**, a friendly, clear ElevenLabs voice. The clips are recorded **ahead of time** and bundled in `Resources/Voice/`:
+
+- The app **never contacts ElevenLabs**. There is no API key in the app or the repo, no network use, no per-use cost, and speech starts instantly, even with no signal indoors.
+- `Core/Speech/SpokenPhrases.swift` builds every sentence the app can say from the same code that says it. Today that's 56 phrases, about 4,500 characters.
+- A test fails if any phrase has no clip, so a map edit can't quietly switch part of the app to a different voice. If a clip is missing on the phone, that message uses the iPhone voice, and Settings says how many phrases are missing.
+- **Settings → Voice** switches to the iPhone voice, which follows the person's Spoken Content voice and speaking rate. Recorded clips always play at their recorded speed.
+- With **VoiceOver on**, VoiceOver reads everything in its own voice, as before. Most blind iPhone users have VoiceOver on, so for them the Anchor voice is only heard if they turn VoiceOver off.
+
+**After changing `demo_map.json`**, re-record from the repository root. Only new or changed phrases are recorded:
+
+```bash
+ELEVENLABS_API_KEY=sk_your_key swift run anchor-voice-clips
+```
+
+Then commit the `Resources/Voice` folder. The key is read from the environment only: never put it in a file in this repo. Other options: `--list` prints every phrase, `--dry-run` shows what would be recorded and how many characters it costs, and `--voice-id` / `--voice-name` switch voices. The free ElevenLabs plan covers this many characters, but it is non-commercial only and requires crediting "elevenlabs.io" (shown in Settings → About). A paid plan includes a commercial license.
 
 ---
 

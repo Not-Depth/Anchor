@@ -13,15 +13,36 @@ final class AppSettings {
         static let nearbyAudioAlerts = "settings.nearbyAudioAlerts"
         static let nearbyHapticAlerts = "settings.nearbyHapticAlerts"
         static let nearbyAlertDistance = "settings.nearbyAlertDistance"
+        static let speechVoice = "settings.speechVoice"
+    }
+
+    /// Which voice speaks directions and alerts when VoiceOver is off.
+    enum SpeechVoice: String, CaseIterable, Identifiable {
+        /// The recorded Anchor voice bundled with the app.
+        case anchor
+        /// The iPhone's own voice, following the person's Spoken Content settings.
+        case system
+
+        var id: String { rawValue }
+
+        var displayName: String {
+            switch self {
+            case .anchor: "Anchor voice"
+            case .system: "iPhone voice"
+            }
+        }
     }
 
     /// Distances offered for nearby alerts, in meters.
-    static let alertDistanceOptions: [Double] = [0.5, 0.75, 1.0, 1.5, 2.0]
+    static let alertDistanceOptions = ProximityAlertPolicy.alertDistanceOptions
 
     private let defaults: UserDefaults
 
     var spokenDirections: Bool {
         didSet { defaults.set(spokenDirections, forKey: Key.spokenDirections) }
+    }
+    var speechVoice: SpeechVoice {
+        didSet { defaults.set(speechVoice.rawValue, forKey: Key.speechVoice) }
     }
     var nearbyAudioAlerts: Bool {
         didSet { defaults.set(nearbyAudioAlerts, forKey: Key.nearbyAudioAlerts) }
@@ -43,8 +64,10 @@ final class AppSettings {
             Key.nearbyAudioAlerts: false,
             Key.nearbyHapticAlerts: false,
             Key.nearbyAlertDistance: 1.0,
+            Key.speechVoice: SpeechVoice.anchor.rawValue,
         ])
         spokenDirections = defaults.bool(forKey: Key.spokenDirections)
+        speechVoice = defaults.string(forKey: Key.speechVoice).flatMap(SpeechVoice.init(rawValue:)) ?? .anchor
         nearbyAudioAlerts = defaults.bool(forKey: Key.nearbyAudioAlerts)
         nearbyHapticAlerts = defaults.bool(forKey: Key.nearbyHapticAlerts)
         nearbyAlertDistance = defaults.double(forKey: Key.nearbyAlertDistance)

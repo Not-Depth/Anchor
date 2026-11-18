@@ -214,12 +214,12 @@ final class NearbyViewModel {
         switch event {
         case .near(let distance):
             if settings.nearbyHapticAlerts { haptics.proximityAlert() }
-            if settings.nearbyAudioAlerts { speech.speak("Surface at \(DistanceText.spokenDepth(distance))") }
+            if settings.nearbyAudioAlerts { speech.speak(SpokenPhrases.surface(atMeters: distance)) }
         case .readingsUnreliable:
             if settings.nearbyHapticAlerts { haptics.warning() }
-            if settings.nearbyAudioAlerts { speech.speak("Depth readings unavailable. Alerts paused.") }
+            if settings.nearbyAudioAlerts { speech.speak(SpokenPhrases.depthReadingsUnavailable) }
         case .readingsRestored:
-            if settings.nearbyAudioAlerts { speech.speak("Depth readings restored.") }
+            if settings.nearbyAudioAlerts { speech.speak(SpokenPhrases.depthReadingsRestored) }
         }
     }
 }

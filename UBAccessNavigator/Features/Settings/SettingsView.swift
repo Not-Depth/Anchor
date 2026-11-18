@@ -10,13 +10,18 @@ struct SettingsView: View {
             Form {
                 Section {
                     Toggle("Speak directions", isOn: $settings.spokenDirections)
+                    Picker("Voice", selection: $settings.speechVoice) {
+                        ForEach(AppSettings.SpeechVoice.allCases) { voice in
+                            Text(voice.displayName).tag(voice)
+                        }
+                    }
                     Button("Test voice") {
-                        model.speech.speak("This is how route directions will sound.")
+                        model.speech.speak(SpokenPhrases.voiceTest)
                     }
                 } header: {
                     Text("Spoken directions")
                 } footer: {
-                    Text("With VoiceOver on, VoiceOver reads each new step and spoken messages use VoiceOver's voice.")
+                    Text(voiceFooter)
                 }
 
                 Section {
@@ -45,9 +50,29 @@ struct SettingsView: View {
 
                 Section("About Anchor") {
                     Text("Anchor helps blind and low-vision students get around campus with spoken, landmark-by-landmark directions.")
+                    if case .bundled(let voiceName, _) = model.voiceStatus {
+                        LabeledContent("Anchor voice", value: "\(voiceName), by ElevenLabs (elevenlabs.io)")
+                    }
                 }
             }
             .navigationTitle("Settings")
         }
+    }
+
+    private var voiceFooter: String {
+        var lines: [String] = []
+        switch (model.settings.speechVoice, model.voiceStatus) {
+        case (.anchor, .notBundled):
+            lines.append("The Anchor voice isn't included in this build, so the iPhone voice is used.")
+        case (.anchor, .bundled(let voiceName, let missing)):
+            lines.append("Anchor voice is a recorded voice (\(voiceName)) that works offline.")
+            if missing > 0 {
+                lines.append("\(missing) \(missing == 1 ? "phrase has" : "phrases have") no recording yet and will use the iPhone voice.")
+            }
+        case (.system, _):
+            lines.append("iPhone voice follows your Spoken Content voice and speaking rate.")
+        }
+        lines.append("With VoiceOver on, VoiceOver reads each new step and spoken messages use VoiceOver's voice.")
+        return lines.joined(separator: " ")
     }
 }

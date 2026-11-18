@@ -53,8 +53,7 @@ struct GuidanceView: View {
         .sensoryFeedback(.selection, trigger: guidance.currentIndex)
         .sensoryFeedback(.success, trigger: guidance.isFinished) { _, finished in finished }
         .onAppear {
-            let label = guidance.route.usesSimulatedData ? "Fictional demo route" : "Route"
-            announceCurrentStep(prefix: "\(label) to \(guidance.route.destination.name). ")
+            announceCurrentStep(intro: guidance.introText)
         }
         .onChange(of: guidance.currentIndex) {
             announceCurrentStep()
@@ -64,12 +63,13 @@ struct GuidanceView: View {
 
     /// With VoiceOver on, moving focus to the instruction makes VoiceOver read it, so we
     /// don't also speak it (that would be two voices at once). Without VoiceOver, the
-    /// speech synthesizer reads it if spoken directions are on and not paused.
-    private func announceCurrentStep(prefix: String = "") {
+    /// app's voice reads it if spoken directions are on and not paused. The intro and the
+    /// step are spoken as separate phrases, matching the recorded clips.
+    private func announceCurrentStep(intro: String? = nil) {
         if voiceOverOn {
             instructionFocused = true
         } else if !speechPaused {
-            model.speakDirection(prefix + step.spokenText)
+            model.speakDirection([intro, step.spokenText].compactMap { $0 })
         }
     }
 

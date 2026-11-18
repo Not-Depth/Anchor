@@ -49,6 +49,12 @@ struct RouteGuidance: Equatable {
         self.steps = Self.makeSteps(for: route)
     }
 
+    /// Spoken once when guidance opens, before the first step,
+    /// e.g. "Fictional demo route to Room 201 (demo lab)."
+    var introText: String {
+        "\(route.usesSimulatedData ? "Fictional demo route" : "Route") to \(route.destination.name)."
+    }
+
     var current: GuidanceStep { steps[currentIndex] }
     var previous: GuidanceStep? { currentIndex > 0 ? steps[currentIndex - 1] : nil }
     var next: GuidanceStep? { currentIndex + 1 < steps.count ? steps[currentIndex + 1] : nil }

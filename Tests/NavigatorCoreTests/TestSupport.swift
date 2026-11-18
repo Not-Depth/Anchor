@@ -5,12 +5,16 @@ enum TestSupport {
     /// Loads the real demo map file from the repository, so the tests check the exact
     /// data the app ships with.
     static func demoMapData() throws -> Data {
-        let url = URL(fileURLWithPath: #filePath)
+        try Data(contentsOf: repositoryFile("UBAccessNavigator/Resources/demo_map.json"))
+    }
+
+    /// A file in this repository, by its path from the repository root.
+    static func repositoryFile(_ path: String) -> URL {
+        URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()  // NavigatorCoreTests
             .deletingLastPathComponent()  // Tests
             .deletingLastPathComponent()  // repository root
-            .appendingPathComponent("UBAccessNavigator/Resources/demo_map.json")
-        return try Data(contentsOf: url)
+            .appendingPathComponent(path)
     }
 
     static func demoMap() throws -> CampusMap {
