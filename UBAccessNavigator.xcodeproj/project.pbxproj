@@ -255,6 +255,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Anchor;
 				INFOPLIST_KEY_NSCameraUsageDescription = "The Nearby tab uses the camera and LiDAR scanner to estimate how far away surfaces are. Camera images stay on your iPhone.";
+				INFOPLIST_KEY_NSMotionUsageDescription = "Anchor uses the barometer to notice when you go up or down a floor during a route. It measures air pressure only, not your location, and nothing leaves your iPhone.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -283,6 +284,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Anchor;
 				INFOPLIST_KEY_NSCameraUsageDescription = "The Nearby tab uses the camera and LiDAR scanner to estimate how far away surfaces are. Camera images stay on your iPhone.";
+				INFOPLIST_KEY_NSMotionUsageDescription = "Anchor uses the barometer to notice when you go up or down a floor during a route. It measures air pressure only, not your location, and nothing leaves your iPhone.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

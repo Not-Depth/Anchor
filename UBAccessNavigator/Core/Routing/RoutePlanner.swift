@@ -80,7 +80,8 @@ struct RoutePlanner {
             mapName: map.name,
             mapDataStatus: map.dataStatus,
             mapDisclaimer: map.disclaimer,
-            totalRoutingCost: path.cost
+            totalRoutingCost: path.cost,
+            floorLevels: Dictionary(map.floors.map { ($0.id, $0.level) }, uniquingKeysWith: { first, _ in first })
         ))
     }
 

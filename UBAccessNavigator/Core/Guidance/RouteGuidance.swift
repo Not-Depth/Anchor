@@ -23,6 +23,9 @@ struct GuidanceStep: Equatable {
     var confirmLabel: String?
     /// Facts about the connection: type, recorded length, availability.
     var details: [String]
+    /// The floor change this step should produce (stairs, elevator), checked with the
+    /// barometer. `nil` for steps that stay on one floor.
+    var floorChange: ExpectedFloorChange? = nil
 
     /// Text for speech output. Built only from the fields above, so nothing is spoken
     /// that isn't also on screen.
@@ -97,7 +100,8 @@ struct RouteGuidance: Equatable {
                 instruction: leg.instruction,
                 arrivalCue: leg.to.arrivalCue,
                 confirmLabel: "I've reached \(leg.to.name)",
-                details: details(for: leg, simulated: route.usesSimulatedData)
+                details: details(for: leg, simulated: route.usesSimulatedData),
+                floorChange: route.expectedFloorChange(for: leg)
             ))
         }
 

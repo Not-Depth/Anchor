@@ -28,6 +28,13 @@ struct Route: Equatable {
     var mapDataStatus: MapDataStatus
     var mapDisclaimer: String
     var totalRoutingCost: Double
+    /// Floor id → level, from the map. Used to tell which steps change floor.
+    var floorLevels: [String: Int] = [:]
+
+    /// The floor change a leg should produce, or `nil` if it stays on one floor.
+    func expectedFloorChange(for leg: RouteLeg) -> ExpectedFloorChange? {
+        ExpectedFloorChange(fromLevel: floorLevels[leg.from.floorID], toLevel: floorLevels[leg.to.floorID])
+    }
 
     /// Landmarks in travel order, starting with `start` and ending with `destination`.
     var landmarksInOrder: [Landmark] {

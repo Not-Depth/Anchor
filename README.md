@@ -37,10 +37,10 @@ A native iPhone app (Swift, SwiftUI) with three tabs:
 
 | Part | Status |
 |---|---|
-| `Core/` (map model, validation, Dijkstra, guidance, depth math, alert logic, spoken phrases) | Compiled with Swift 6.0.3 on Linux. **50 unit tests pass** (`swift test`). |
+| `Core/` (map model, validation, Dijkstra, guidance, depth math, alert logic, spoken phrases, floor-change logic) | Compiled with Swift 6.0.3 on Linux. **62 unit tests pass** (`swift test`); one more checks the recorded voice clips and is skipped until they exist. |
 | `demo_map.json` | Loads and passes all validation rules (checked by the tests). |
 | `UBAccessNavigator.xcodeproj` | Written by hand in Xcode 16's project format. Parsed and every internal reference checked, but **not yet opened in Xcode**. |
-| SwiftUI / ARKit / speech code | **Not compiled yet.** It needs Xcode on a Mac. The first build on your Mac is the real check. (`SpeechService`, `VoiceClipLibrary`, `AppSettings` and `AppModel` were type-checked on Linux against stand-ins for AVFoundation/UIKit, which catches typos but not framework mistakes.) |
+| SwiftUI / ARKit / speech code | **Not compiled yet.** It needs Xcode on a Mac. The first build on your Mac is the real check. (`SpeechService`, `VoiceClipLibrary`, `FloorTracker`, `AppSettings` and `AppModel` were type-checked on Linux against stand-ins for AVFoundation, UIKit and CoreMotion, which catches typos but not framework mistakes.) |
 
 If the first build shows errors, paste them back and they can be fixed quickly.
 
@@ -114,7 +114,7 @@ The camera preview uses RealityKit's `ARView` rather than `ARSCNView`. Apple mar
 ```
 UBAccessNavigator/
 ├─ Package.swift              ← lets `swift test` build Core/ on its own, plus the voice clip generator
-├─ Tests/NavigatorCoreTests/  ← 50 unit tests for Core/
+├─ Tests/NavigatorCoreTests/  ← 63 unit tests for Core/
 ├─ Tools/VoiceClips/          ← `swift run anchor-voice-clips`: records the Anchor voice (not part of the app)
 ├─ UBAccessNavigator.xcodeproj
 └─ UBAccessNavigator/         ← everything in here is compiled into the app
@@ -123,12 +123,14 @@ UBAccessNavigator/
    │  ├─ Routing/    RoutePlanner (Dijkstra) + Route + NoRouteDiagnosis
    │  ├─ Guidance/   RouteGuidance: step-by-step state machine
    │  ├─ Depth/      DepthAnalyzer (pure math) + ProximityAlertPolicy
+   │  ├─ Floors/     FloorChangeDetector: barometer readings → floor-change check
    │  └─ Speech/     SpokenPhrases (everything the app can say) + VoiceClipManifest
-   ├─ Services/    AppSettings (UserDefaults), SpeechService, VoiceClipLibrary, HapticsService
+   ├─ Services/    AppSettings (UserDefaults), SpeechService, VoiceClipLibrary, FloorTracker (CMAltimeter), HapticsService
    ├─ Resources/   demo_map.json, Voice/ (recorded Anchor voice clips + voice_manifest.json)
    ├─ Features/
    │  ├─ Routes/     RoutesView → RouteResultView → GuidanceView, schematic
    │  ├─ Nearby/     NearbyView, NearbyViewModel, ARKit session + camera view
+   │  ├─ Onboarding/ FloorIntroView (first-launch screen before the Motion & Fitness prompt)
    │  └─ Settings/   SettingsView
    ├─ App/         App entry point, AppModel (shared state)
    └─ Resources/   demo_map.json
@@ -220,12 +222,22 @@ When real survey data arrives, add a new map file with `dataStatus: "surveyed_un
 
 **Please test on the device:** VoiceOver on, the largest accessibility text size, Bold Text, and Reduce Motion.
 
+### Floor changes (barometer)
+
+On steps that change floor (stairs, elevator), Anchor checks the change with the iPhone's **barometer** (`CMAltimeter` relative altitude) and says, for example, "Floor change sensed: you went up 1 floor." If it senses the wrong direction or a different number of floors, it says "Check your floor." It **never moves guidance forward by itself**: the person still confirms each landmark.
+
+- **Why the barometer, not GPS:** GPS altitude is usually unavailable indoors and its error is larger than a floor. The barometer measures changes of well under a meter, indoors.
+- **Permission:** Motion & Fitness, not Location. The usage text is `INFOPLIST_KEY_NSMotionUsageDescription` in the target's build settings. On first launch, a short screen (`FloorIntroView`) explains what it's for, then **Continue** shows the iOS prompt. **Not now** turns floor checks off; they can be turned on later in **Settings → Floor changes**, which also shows the permission and links to iPhone Settings if it was denied.
+- **Privacy:** air pressure only, no location, nothing leaves the phone. The barometer runs only while a floor-changing step is on screen.
+- **Thresholds** (in `Core/Floors/FloorChange.swift`): a change of 2 m or more counts as a floor change, and about 3.5 m counts as one floor. Readings are smoothed over 3 samples. Weather and building ventilation can shift pressure, so test these on real stairs and elevators and tune them.
+- The web companion has no barometer, so it has no floor check.
+
 ### The Anchor voice (ElevenLabs)
 
 When VoiceOver is off, directions and alerts are spoken by **Matilda**, a friendly, clear ElevenLabs voice. The clips are recorded **ahead of time** and bundled in `Resources/Voice/`:
 
 - The app **never contacts ElevenLabs**. There is no API key in the app or the repo, no network use, no per-use cost, and speech starts instantly, even with no signal indoors.
-- `Core/Speech/SpokenPhrases.swift` builds every sentence the app can say from the same code that says it. Today that's 56 phrases, about 4,500 characters.
+- `Core/Speech/SpokenPhrases.swift` builds every sentence the app can say from the same code that says it. Today that's 60 phrases, about 4,700 characters.
 - A test fails if any phrase has no clip, so a map edit can't quietly switch part of the app to a different voice. If a clip is missing on the phone, that message uses the iPhone voice, and Settings says how many phrases are missing.
 - **Settings → Voice** switches to the iPhone voice, which follows the person's Spoken Content voice and speaking rate. Recorded clips always play at their recorded speed.
 - With **VoiceOver on**, VoiceOver reads everything in its own voice, as before. Most blind iPhone users have VoiceOver on, so for them the Anchor voice is only heard if they turn VoiceOver off.

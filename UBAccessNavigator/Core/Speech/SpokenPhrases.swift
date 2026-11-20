@@ -10,6 +10,13 @@ public enum SpokenPhrases {
     static let voiceTest = "This is how route directions will sound."
     static let depthReadingsUnavailable = "Depth readings unavailable. Alerts paused."
     static let depthReadingsRestored = "Depth readings restored."
+    static let floorChangeWrongDirection = "Check your floor. Anchor sensed you going the other way."
+    static let floorChangeWrongCount = "Check your floor. Anchor sensed a different number of floors."
+
+    /// Floor check result, e.g. "Floor change sensed: you went up 1 floor."
+    static func floorChangeConfirmed(_ change: ExpectedFloorChange) -> String {
+        "Floor change sensed: you went \(change.direction.word) \(FloorText.count(change.floors))."
+    }
 
     /// Nearby alert, e.g. "Surface at 0.8 meters".
     static func surface(atMeters distance: Double) -> String {
@@ -32,7 +39,8 @@ public enum SpokenPhrases {
 
     /// All phrases for this map, sorted and without duplicates.
     static func all(in map: CampusMap) -> [String] {
-        var phrases: Set<String> = [voiceTest, depthReadingsUnavailable, depthReadingsRestored]
+        var phrases: Set<String> = [voiceTest, depthReadingsUnavailable, depthReadingsRestored,
+                                    floorChangeWrongDirection, floorChangeWrongCount]
         for distance in alertDistances() {
             phrases.insert(surface(atMeters: distance))
         }
@@ -48,6 +56,9 @@ public enum SpokenPhrases {
                 phrases.insert(guidance.introText)
                 for step in guidance.steps {
                     phrases.insert(step.spokenText)
+                    if let change = step.floorChange {
+                        phrases.insert(floorChangeConfirmed(change))
+                    }
                 }
             }
         }

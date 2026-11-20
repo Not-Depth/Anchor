@@ -9,6 +9,8 @@ final class AppModel {
     let speech: SpeechService
     let haptics: HapticsService
     let nearby: NearbyViewModel
+    /// Barometer-based floor checks during guidance.
+    let floorTracker: FloorTracker
 
     /// The campus map, as loaded from disk. `nil` if it failed to load or validate.
     private(set) var map: CampusMap?
@@ -27,13 +29,14 @@ final class AppModel {
         self.speech = speech
         self.haptics = haptics
         self.nearby = NearbyViewModel(settings: settings, speech: speech, haptics: haptics)
+        self.floorTracker = FloorTracker()
         do {
             map = try CampusMap.load(in: bundle)
         } catch {
             mapLoadError = String(describing: error)
         }
         if let clips {
-            let phrases = map.map(SpokenPhrases.all(in:)) ?? []
+            let phrases = map.map { SpokenPhrases.all(in: $0) } ?? []
             voiceStatus = .bundled(voiceName: clips.manifest.voice.name,
                                    missingPhrases: clips.missingPhrases(in: phrases).count)
         }

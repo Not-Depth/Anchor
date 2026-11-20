@@ -9,6 +9,8 @@ struct GuidanceView: View {
     @State private var guidance: RouteGuidance
     @State private var speechPaused = false
     @State private var confirmingEnd = false
+    /// The last floor check result spoken for the current step, so each result is said once.
+    @State private var announcedFloorCheck: FloorCheck?
     @AccessibilityFocusState private var instructionFocused: Bool
 
     init(guidance: RouteGuidance) {
@@ -52,13 +54,89 @@ struct GuidanceView: View {
         }
         .sensoryFeedback(.selection, trigger: guidance.currentIndex)
         .sensoryFeedback(.success, trigger: guidance.isFinished) { _, finished in finished }
+        .sensoryFeedback(trigger: floorCheck) { _, check in
+            switch check {
+            case .matches?: .success
+            case .wrongDirection?, .wrongCount?: .warning
+            default: nil
+            }
+        }
         .onAppear {
             announceCurrentStep(intro: guidance.introText)
+            updateFloorTracking()
         }
         .onChange(of: guidance.currentIndex) {
             announceCurrentStep()
+            updateFloorTracking()
         }
-        .onDisappear { model.speech.stop() }
+        .onChange(of: floorCheck) { _, check in
+            announceFloorCheck(check)
+        }
+        .onDisappear {
+            model.speech.stop()
+            model.floorTracker.stop()
+        }
+    }
+
+    // MARK: Floor check
+
+    /// The barometer runs only while a step that changes floor is on screen, measuring
+    /// from the moment that step begins.
+    private func updateFloorTracking() {
+        announcedFloorCheck = nil
+        if step.floorChange != nil && model.settings.floorDetection {
+            model.floorTracker.startMeasuring()
+        } else {
+            model.floorTracker.stop()
+        }
+    }
+
+    /// `nil` when this step stays on one floor or floor checks are off or not allowed.
+    private var floorCheck: FloorCheck? {
+        guard let expected = step.floorChange,
+              model.settings.floorDetection,
+              model.floorTracker.access == .allowed else { return nil }
+        return FloorCheck(expected: expected, estimate: model.floorTracker.detector.estimate)
+    }
+
+    /// Says a floor check result once. It never moves guidance forward: the person still
+    /// confirms the landmark.
+    private func announceFloorCheck(_ check: FloorCheck?) {
+        guard let check, let expected = step.floorChange, check != announcedFloorCheck,
+              let text = check.spokenText(expected: expected) else { return }
+        announcedFloorCheck = check
+        if voiceOverOn {
+            AccessibilityNotification.Announcement(text).post()
+        } else if !speechPaused {
+            model.speakDirection(text)
+        }
+    }
+
+    @ViewBuilder
+    private func floorCheckRow(expected: ExpectedFloorChange) -> some View {
+        if let check = floorCheck {
+            Label {
+                Text(check.displayText(expected: expected))
+                    .fixedSize(horizontal: false, vertical: true)
+            } icon: {
+                // Color is only on the icon; the words carry the meaning.
+                switch check {
+                case .waiting:
+                    Image(systemName: "hourglass")
+                case .notYet:
+                    Image(systemName: "figure.stairs")
+                case .matches:
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                case .wrongDirection, .wrongCount:
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                }
+            }
+            .font(.body)
+        } else if model.settings.floorDetection, model.floorTracker.isSupported {
+            Text("Floor check is off: allow Motion & Fitness for Anchor in Settings.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
     }
 
     /// With VoiceOver on, moving focus to the instruction makes VoiceOver read it, so we
@@ -103,6 +181,10 @@ struct GuidanceView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .accessibilityElement(children: .combine)
+            }
+
+            if let expected = step.floorChange {
+                floorCheckRow(expected: expected)
             }
         }
     }

@@ -14,6 +14,8 @@ final class AppSettings {
         static let nearbyHapticAlerts = "settings.nearbyHapticAlerts"
         static let nearbyAlertDistance = "settings.nearbyAlertDistance"
         static let speechVoice = "settings.speechVoice"
+        static let floorDetection = "settings.floorDetection"
+        static let hasSeenFloorIntro = "settings.hasSeenFloorIntro"
     }
 
     /// Which voice speaks directions and alerts when VoiceOver is off.
@@ -54,6 +56,15 @@ final class AppSettings {
         didSet { defaults.set(nearbyAlertDistance, forKey: Key.nearbyAlertDistance) }
     }
 
+    /// Check floor changes on stairs and elevator steps with the barometer.
+    var floorDetection: Bool {
+        didSet { defaults.set(floorDetection, forKey: Key.floorDetection) }
+    }
+    /// Whether the first-launch screen about floor detection has been shown.
+    var hasSeenFloorIntro: Bool {
+        didSet { defaults.set(hasSeenFloorIntro, forKey: Key.hasSeenFloorIntro) }
+    }
+
     var anyNearbyAlertsEnabled: Bool { nearbyAudioAlerts || nearbyHapticAlerts }
 
     init(defaults: UserDefaults = .standard) {
@@ -65,11 +76,15 @@ final class AppSettings {
             Key.nearbyHapticAlerts: false,
             Key.nearbyAlertDistance: 1.0,
             Key.speechVoice: SpeechVoice.anchor.rawValue,
+            Key.floorDetection: true,
+            Key.hasSeenFloorIntro: false,
         ])
         spokenDirections = defaults.bool(forKey: Key.spokenDirections)
         speechVoice = defaults.string(forKey: Key.speechVoice).flatMap(SpeechVoice.init(rawValue:)) ?? .anchor
         nearbyAudioAlerts = defaults.bool(forKey: Key.nearbyAudioAlerts)
         nearbyHapticAlerts = defaults.bool(forKey: Key.nearbyHapticAlerts)
         nearbyAlertDistance = defaults.double(forKey: Key.nearbyAlertDistance)
+        floorDetection = defaults.bool(forKey: Key.floorDetection)
+        hasSeenFloorIntro = defaults.bool(forKey: Key.hasSeenFloorIntro)
     }
 }

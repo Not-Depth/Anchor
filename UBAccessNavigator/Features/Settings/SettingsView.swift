@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         @Bindable var settings = model.settings
@@ -22,6 +23,31 @@ struct SettingsView: View {
                     Text("Spoken directions")
                 } footer: {
                     Text(voiceFooter)
+                }
+
+                Section {
+                    if model.floorTracker.isSupported {
+                        Toggle("Check floor changes", isOn: $settings.floorDetection)
+                        LabeledContent("Motion & Fitness", value: floorAccessText)
+                        if settings.floorDetection {
+                            switch model.floorTracker.access {
+                            case .notAsked:
+                                Button("Allow Motion & Fitness") { model.floorTracker.requestAccess() }
+                            case .denied:
+                                Button("Open iPhone Settings") {
+                                    if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                                }
+                            case .allowed, .restricted, .unavailable:
+                                EmptyView()
+                            }
+                        }
+                    } else {
+                        Text("This iPhone has no barometer, so floor checks aren't available.")
+                    }
+                } header: {
+                    Text("Floor changes")
+                } footer: {
+                    Text("On stairs and elevator steps, Anchor uses the barometer to check that you went up or down the right number of floors. It measures air pressure only, not your location, and nothing leaves your iPhone. Weather and air conditioning can shift readings, so keep confirming each landmark yourself.")
                 }
 
                 Section {
@@ -56,6 +82,16 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+        }
+    }
+
+    private var floorAccessText: String {
+        switch model.floorTracker.access {
+        case .allowed: "Allowed"
+        case .notAsked: "Not asked yet"
+        case .denied: "Off for Anchor"
+        case .restricted: "Restricted on this iPhone"
+        case .unavailable: "Not available"
         }
     }
 
