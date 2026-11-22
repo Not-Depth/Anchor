@@ -5,11 +5,9 @@ import Foundation
 /// Rules that are never relaxed when building a route:
 /// - Connections marked `unavailable` are excluded.
 /// - One-way connections are only traveled `from -> to`.
-/// - With `requireStepFree`, only connections with `stepFree == .confirmed` are allowed,
-///   and stairs are excluded even if the data were wrong about them.
 ///
-/// The relaxed searches in `diagnoseFailure` are only used to *explain* a failure.
-/// Their routes are never returned to the person.
+/// The relaxed search in `diagnoseFailure` is only used to *explain* a failure.
+/// Its route is never returned to the person.
 struct RoutePlanner {
     let map: CampusMap
 
@@ -21,19 +19,13 @@ struct RoutePlanner {
         let isReversed: Bool
     }
 
-    /// How a search treats one kind of problem connection.
-    private enum Rule {
-        case allow
+    /// How a search treats connections that are currently unavailable.
+    private enum UnavailableRule {
+        /// Never use them. Normal routing.
         case exclude
         /// Allowed, but with a huge extra cost. Used only when diagnosing a failure, so the
-        /// search finds the route that needs the *fewest* problem connections.
+        /// search finds the route that needs the *fewest* unavailable connections.
         case penalize
-    }
-
-    /// Which constraints a search applies.
-    private struct Constraints {
-        var unavailable: Rule
-        var notStepFree: Rule
     }
 
     private static let diagnosisPenalty = 1_000_000.0
@@ -56,11 +48,7 @@ struct RoutePlanner {
         self.outgoing = adjacency
     }
 
-    func route(
-        from startID: String,
-        to destinationID: String,
-        preferences: RoutePreferences
-    ) -> Result<Route, RouteFailure> {
+    func route(from startID: String, to destinationID: String) -> Result<Route, RouteFailure> {
         guard let start = map.landmark(withID: startID) else {
             return .failure(.unknownLandmark(startID))
         }
@@ -71,9 +59,8 @@ struct RoutePlanner {
             return .failure(.sameStartAndDestination)
         }
 
-        let strict = Constraints(unavailable: .exclude, notStepFree: preferences.requireStepFree ? .exclude : .allow)
-        guard let path = shortestPath(from: startID, to: destinationID, constraints: strict) else {
-            return .failure(.noSuitableRoute(diagnoseFailure(from: startID, to: destinationID, preferences: preferences)))
+        guard let path = shortestPath(from: startID, to: destinationID, unavailable: .exclude) else {
+            return .failure(.noSuitableRoute(diagnoseFailure(from: startID, to: destinationID)))
         }
 
         let legs = path.edges.enumerated().map { index, edge in
@@ -90,7 +77,6 @@ struct RoutePlanner {
             start: start,
             destination: destination,
             legs: legs,
-            preferences: preferences,
             mapName: map.name,
             mapDataStatus: map.dataStatus,
             mapDisclaimer: map.disclaimer,
@@ -98,27 +84,15 @@ struct RoutePlanner {
         ))
     }
 
-    // MARK: - Constraint checks
+    // MARK: - Costs
 
-    /// The cost of using `connection` under `constraints`, or `nil` if it may not be used.
-    private func cost(of connection: Connection, under constraints: Constraints) -> Double? {
-        var cost = connection.effectiveCost
-        for (violated, rule) in [
-            (connection.availability == .unavailable, constraints.unavailable),
-            (!Self.isStepFree(connection), constraints.notStepFree),
-        ] where violated {
-            switch rule {
-            case .allow: break
-            case .exclude: return nil
-            case .penalize: cost += Self.diagnosisPenalty
-            }
+    /// The cost of using `connection`, or `nil` if it may not be used.
+    private func cost(of connection: Connection, unavailable rule: UnavailableRule) -> Double? {
+        guard connection.availability == .unavailable else { return connection.effectiveCost }
+        switch rule {
+        case .exclude: return nil
+        case .penalize: return connection.effectiveCost + Self.diagnosisPenalty
         }
-        return cost
-    }
-
-    /// Only an explicit `confirmed` counts. `unknown` is treated the same as `unsuitable`.
-    static func isStepFree(_ connection: Connection) -> Bool {
-        connection.type != .stairs && connection.stepFree == .confirmed
     }
 
     // MARK: - Dijkstra
@@ -131,7 +105,7 @@ struct RoutePlanner {
     private func shortestPath(
         from start: String,
         to goal: String,
-        constraints: Constraints
+        unavailable rule: UnavailableRule
     ) -> (edges: [Edge], cost: Double)? {
         var bestCost: [String: Double] = [start: 0]
         var arrivedVia: [String: Edge] = [:]
@@ -145,7 +119,7 @@ struct RoutePlanner {
 
             for edge in outgoing[current, default: []] {
                 guard !settled.contains(edge.to),
-                      let edgeCost = cost(of: edge.connection, under: constraints) else { continue }
+                      let edgeCost = cost(of: edge.connection, unavailable: rule) else { continue }
                 let candidate = bestCost[current]! + edgeCost
                 if candidate < bestCost[edge.to, default: .infinity] {
                     bestCost[edge.to] = candidate
@@ -169,43 +143,15 @@ struct RoutePlanner {
 
     // MARK: - Explaining failures
 
-    /// Runs relaxed searches to find *why* no route exists, so the app can say
-    /// "Elevator A is unavailable" instead of just "no route". Relaxed connections are
-    /// penalized rather than freely allowed, so only the unavoidable blockers are listed.
-    private func diagnoseFailure(
-        from start: String,
-        to goal: String,
-        preferences: RoutePreferences
-    ) -> NoRouteDiagnosis {
-        let stepFreeRule: Rule = preferences.requireStepFree ? .exclude : .allow
-
-        // 1. Would the person's own preferences work if unavailable connections were open?
-        let relaxAvailability = Constraints(unavailable: .penalize, notStepFree: stepFreeRule)
-        if let path = shortestPath(from: start, to: goal, constraints: relaxAvailability) {
+    /// Runs a relaxed search to find *why* no route exists, so the app can say
+    /// "Stairwell A stairs is unavailable" instead of just "no route". Unavailable
+    /// connections are penalized rather than freely allowed, so only the unavoidable
+    /// blockers are listed.
+    private func diagnoseFailure(from start: String, to goal: String) -> NoRouteDiagnosis {
+        if let path = shortestPath(from: start, to: goal, unavailable: .penalize) {
             let blockers = path.edges.map(\.connection).filter { $0.availability == .unavailable }
             return NoRouteDiagnosis(reason: .blockedByUnavailableConnections, blockingConnections: unique(blockers))
         }
-
-        guard preferences.requireStepFree else {
-            return NoRouteDiagnosis(reason: .notConnected, blockingConnections: [])
-        }
-
-        // 2. Does a route exist if step-free were not required?
-        let relaxStepFree = Constraints(unavailable: .exclude, notStepFree: .penalize)
-        if let path = shortestPath(from: start, to: goal, constraints: relaxStepFree) {
-            let blockers = path.edges.map(\.connection).filter { !Self.isStepFree($0) }
-            return NoRouteDiagnosis(reason: .blockedByStepFreeRequirement, blockingConnections: unique(blockers))
-        }
-
-        // 3. Only with both relaxed?
-        let relaxBoth = Constraints(unavailable: .penalize, notStepFree: .penalize)
-        if let path = shortestPath(from: start, to: goal, constraints: relaxBoth) {
-            let blockers = path.edges.map(\.connection).filter {
-                $0.availability == .unavailable || !Self.isStepFree($0)
-            }
-            return NoRouteDiagnosis(reason: .blockedByBoth, blockingConnections: unique(blockers))
-        }
-
         return NoRouteDiagnosis(reason: .notConnected, blockingConnections: [])
     }
 

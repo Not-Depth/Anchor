@@ -1,22 +1,35 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { validateMap, withElevatorOutage } from '../src/core/map.js';
+import { validateMap } from '../src/core/map.js';
 import { planRoute } from '../src/core/routing.js';
 import { guidanceSteps, moveStep } from '../src/core/guidance.js';
 import { defaults, loadSettings, saveSettings, SETTINGS_KEY } from '../src/core/settings.js';
 import { ProximityPolicy } from '../src/core/proximity.js';
 
-const map = JSON.parse(
-  await readFile(new URL('../../UBAccessNavigator/Resources/demo_map.json', import.meta.url)),
+const mapSource = await readFile(
+  new URL('../../UBAccessNavigator/Resources/demo_map.json', import.meta.url),
+  'utf8',
 );
+const map = JSON.parse(mapSource);
 const ids = (route) => route.legs.map((leg) => leg.connection.id);
+// A copy of the map with some connections closed, e.g. a stairwell under repair.
+const closing = (closedIDs) => ({
+  ...map,
+  connections: map.connections.map((c) =>
+    closedIDs.includes(c.id) ? { ...c, availability: 'unavailable' } : c,
+  ),
+});
 
 test('shared native map is valid and contains the complete fictional graph', () => {
   assert.deepEqual(validateMap(map), []);
   assert.equal(map.landmarks.length, 12);
   assert.equal(map.connections.length, 14);
   assert.equal(map.dataStatus, 'fictional_demo');
+});
+test('shared map carries no wheelchair-only step-free fields', () => {
+  assert.equal(mapSource.includes('stepFree'), false);
+  assert.equal(/step-free/i.test(mapSource), false);
 });
 test('default shortest route matches the native test scenario and cost', () => {
   const route = planRoute(map, 'plaza', 'room-201');
@@ -31,10 +44,10 @@ test('default shortest route matches the native test scenario and cost', () => {
   assert.equal(route.totalRoutingCost, 47);
   assert.equal(route.usesStairs, true);
 });
-test('step-free route uses confirmed ramp and elevator, with honest distance totals', () => {
-  const route = planRoute(map, 'plaza', 'room-201', true);
+test('a closed stairwell reroutes through the elevator, with honest distance totals', () => {
+  const route = planRoute(closing(['stairwell-a-stairs']), 'plaza', 'room-201');
   assert.deepEqual(ids(route), [
-    'west-ramp',
+    'front-steps',
     'lobby-doors',
     'main-corridor',
     'east-to-elevator',
@@ -42,57 +55,43 @@ test('step-free route uses confirmed ramp and elevator, with honest distance tot
     'f2-elevator-to-central',
     'central-to-room-201',
   ]);
-  assert.equal(route.usesStairs, false);
-  assert.equal(route.recordedLengthMeters, 87);
+  assert.equal(route.recordedLengthMeters, 75);
   assert.equal(route.legsWithUnknownLength, 1);
 });
-test('elevator outage explains failure without offering a stairs fallback', () => {
-  const changed = withElevatorOutage(map, true);
-  const failure = planRoute(changed, 'plaza', 'room-201', true);
+test('closing every way upstairs explains the blocker without offering a route', () => {
+  const failure = planRoute(closing(['stairwell-a-stairs', 'elevator-a']), 'plaza', 'room-201');
   assert.equal(failure.ok, false);
   assert.equal(failure.reason, 'unavailable');
   assert.deepEqual(
     failure.blockers.map((c) => c.id),
-    ['elevator-a'],
+    ['stairwell-a-stairs'],
   );
-  assert.match(failure.explanation, /Elevator A \(unavailable\)/);
+  assert.match(failure.explanation, /Stairwell A stairs \(unavailable\)/);
   assert.equal(failure.legs, undefined);
-  assert.equal(planRoute(changed, 'plaza', 'room-201').ok, true);
   assert.equal(map.connections.find((c) => c.id === 'elevator-a').availability, 'available');
 });
-test('unknown step-free status blocks the skybridge and identifies only that blocker', () => {
-  const failure = planRoute(map, 'plaza', 'annex-reading-room', true);
-  assert.equal(failure.reason, 'step_free');
-  assert.deepEqual(
-    failure.blockers.map((c) => c.id),
-    ['annex-skybridge'],
-  );
-  assert.match(failure.explanation, /step-free suitability unknown/);
-});
-test('skybridge route carries availability and suitability warnings', () => {
+test('skybridge route carries only the availability warning', () => {
   const route = planRoute(map, 'plaza', 'annex-reading-room');
   assert.equal(route.ok, true);
-  assert.equal(route.warnings.length, 2);
-  assert.match(route.warnings[0], /availability is not confirmed/);
-  assert.match(route.warnings[1], /suitability is unknown/);
+  assert.deepEqual(route.warnings, ['Skybridge to Annex: current availability is not confirmed.']);
 });
 test('exit-only connection is never traversed in reverse', () => {
-  assert.deepEqual(ids(planRoute(map, 'room-105', 'plaza', true)), [
+  assert.deepEqual(ids(planRoute(map, 'room-105', 'plaza')), [
     'east-to-room-105',
     'east-exit-door',
   ]);
-  assert.deepEqual(ids(planRoute(map, 'plaza', 'room-105', true)), [
-    'west-ramp',
+  assert.deepEqual(ids(planRoute(map, 'plaza', 'room-105')), [
+    'front-steps',
     'lobby-doors',
     'main-corridor',
     'east-to-room-105',
   ]);
 });
 test('reverse travel uses the authored reverse instructions', () => {
-  const route = planRoute(map, 'room-201', 'room-105', true);
-  const lift = route.legs.find((leg) => leg.connection.id === 'elevator-a');
-  assert.equal(lift.reversed, true);
-  assert.match(lift.instruction, /select Floor 1/);
+  const route = planRoute(map, 'room-201', 'room-105');
+  const stairs = route.legs.find((leg) => leg.connection.id === 'stairwell-a-stairs');
+  assert.equal(stairs.reversed, true);
+  assert.match(stairs.instruction, /Go down the stairs to Floor 1/);
 });
 test('same location, unknown IDs and disconnected places have distinct failures', () => {
   assert.equal(planRoute(map, 'plaza', 'plaza').reason, 'same_location');
@@ -103,27 +102,10 @@ test('same location, unknown IDs and disconnected places have distinct failures'
   );
   assert.equal(planRoute(disconnected, 'plaza', 'room-201').reason, 'not_connected');
 });
-test('combined blockers are explained without exposing the diagnostic route', () => {
-  const changed = withElevatorOutage(map, true);
-  changed.connections = changed.connections.filter((c) => c.type !== 'stairs');
-  const failure = planRoute(changed, 'plaza', 'annex-reading-room', true);
-  assert.equal(failure.reason, 'both');
-  assert.equal(failure.legs, undefined);
-  assert.ok(failure.blockers.some((c) => c.id === 'annex-skybridge'));
-});
 test('routing cost, rather than physical length, decides the route', () => {
   const changed = structuredClone(map);
   changed.connections.find((c) => c.id === 'front-steps').routingCost = 100;
   assert.equal(ids(planRoute(changed, 'plaza', 'main-entrance'))[0], 'west-ramp');
-});
-test('planner rejects stairs even if data incorrectly claims confirmed suitability', () => {
-  const changed = structuredClone(map);
-  changed.connections
-    .filter((c) => c.type === 'stairs')
-    .forEach((c) => {
-      c.stepFree = 'confirmed';
-    });
-  assert.equal(planRoute(changed, 'plaza', 'room-201', true).usesStairs, false);
 });
 
 for (const [name, mutate, match] of [
@@ -171,13 +153,6 @@ for (const [name, mutate, match] of [
     /reverse instruction/,
   ],
   [
-    'false step-free claim',
-    (m) => {
-      m.connections[0].stepFree = 'confirmed';
-    },
-    /stairs but claims/,
-  ],
-  [
     'false verification claim',
     (m) => {
       m.connections[0].verification.status = 'verified';
@@ -222,7 +197,7 @@ test('validation handles malformed map shapes without throwing', () => {
     assert.ok(validateMap(value).length);
 });
 test('guidance confirms start, every leg, and arrival without going out of bounds', () => {
-  const route = planRoute(map, 'plaza', 'room-201', true);
+  const route = planRoute(map, 'plaza', 'room-201');
   const steps = guidanceSteps(route);
   assert.equal(steps.length, route.legs.length + 2);
   assert.equal(steps[0].landmarkID, 'plaza');
@@ -239,16 +214,28 @@ test('settings persist independently and invalid stored types are discarded', ()
     setItem: (key, value) => store.set(key, value),
   };
   assert.equal(
-    saveSettings(storage, { ...defaults, requireStepFree: true, nearbyAudioAlerts: true }),
+    saveSettings(storage, { ...defaults, nearbyHapticAlerts: true, nearbyAudioAlerts: true }),
     true,
   );
-  assert.equal(loadSettings(storage).requireStepFree, true);
+  assert.equal(loadSettings(storage).nearbyHapticAlerts, true);
   assert.equal(loadSettings(storage).nearbyAudioAlerts, true);
   assert.equal(loadSettings(storage).spokenDirections, false);
-  store.set(SETTINGS_KEY, '{"requireStepFree":"false","nearbyAlertDistance":-1}');
+  store.set(SETTINGS_KEY, '{"nearbyHapticAlerts":"false","nearbyAlertDistance":-1}');
   assert.deepEqual(loadSettings(storage), defaults);
   store.set(SETTINGS_KEY, '{invalid');
   assert.deepEqual(loadSettings(storage), defaults);
+});
+test('step-free settings saved by older versions are ignored', () => {
+  const store = new Map([
+    [
+      SETTINGS_KEY,
+      '{"requireStepFree":true,"simulateElevatorOutage":true,"spokenDirections":true}',
+    ],
+  ]);
+  const settings = loadSettings({ getItem: (key) => store.get(key) });
+  assert.equal('requireStepFree' in settings, false);
+  assert.equal('simulateElevatorOutage' in settings, false);
+  assert.equal(settings.spokenDirections, true);
 });
 test('denied browser storage is nonfatal', () => {
   const storage = {
@@ -283,28 +270,21 @@ test('lost readings get a grace period, one warning and a recovery event', () =>
   assert.equal(policy.update(0.5, 5020), 'near');
 });
 
-test('every selectable route obeys constraints in normal and outage conditions', () => {
+test('every selectable route obeys constraints, including with the stairwell closed', () => {
   // Exhaustive demo-graph coverage catches interactions beyond the named examples.
-  for (const outage of [false, true])
-    for (const stepFree of [false, true]) {
-      const changed = withElevatorOutage(map, outage);
-      for (const start of map.landmarks.filter((l) => l.canStartHere))
-        for (const end of map.landmarks.filter((l) => l.isDestination)) {
-          const route = planRoute(changed, start.id, end.id, stepFree);
-          if (!route.ok) continue;
-          let previous = start.id;
-          for (const leg of route.legs) {
-            assert.equal(leg.from.id, previous);
-            assert.notEqual(leg.connection.availability, 'unavailable');
-            assert.ok(leg.instruction.length > 0);
-            if (stepFree) {
-              assert.equal(leg.connection.stepFree, 'confirmed');
-              assert.notEqual(leg.connection.type, 'stairs');
-            }
-            if (leg.reversed) assert.equal(leg.connection.direction, 'bidirectional');
-            previous = leg.to.id;
-          }
-          assert.equal(previous, end.id);
+  for (const changed of [map, closing(['stairwell-a-stairs'])])
+    for (const start of map.landmarks.filter((l) => l.canStartHere))
+      for (const end of map.landmarks.filter((l) => l.isDestination)) {
+        const route = planRoute(changed, start.id, end.id);
+        if (!route.ok) continue;
+        let previous = start.id;
+        for (const leg of route.legs) {
+          assert.equal(leg.from.id, previous);
+          assert.notEqual(leg.connection.availability, 'unavailable');
+          assert.ok(leg.instruction.length > 0);
+          if (leg.reversed) assert.equal(leg.connection.direction, 'bidirectional');
+          previous = leg.to.id;
         }
-    }
+        assert.equal(previous, end.id);
+      }
 });

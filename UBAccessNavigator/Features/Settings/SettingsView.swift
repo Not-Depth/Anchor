@@ -9,14 +9,6 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section {
-                    Toggle("Step-free routes only", isOn: $settings.requireStepFree)
-                } header: {
-                    Text("Routes")
-                } footer: {
-                    Text("Excludes stairs and any connection not confirmed step-free. If no such route exists, the app says so instead of offering stairs.")
-                }
-
-                Section {
                     Toggle("Speak directions", isOn: $settings.spokenDirections)
                     Button("Test voice") {
                         model.speech.speak("This is how route directions will sound.")
@@ -38,18 +30,10 @@ struct SettingsView: View {
                 } header: {
                     Text("Nearby alerts (experimental)")
                 } footer: {
-                    Text("Alerts respond to how close surfaces are in the center of the camera view. They do not identify objects and can miss hazards such as glass, thin poles or drop-offs. Keep using your usual mobility aids.")
+                    Text("Alerts respond to how close surfaces are in the center of the camera view. They do not identify objects and can miss hazards such as glass, thin poles or drop-offs. Keep using your cane, guide dog or other usual mobility aids.")
                 }
 
-                Section {
-                    Toggle("Simulate elevator outage", isOn: $settings.simulateElevatorOutage)
-                } header: {
-                    Text("Demo simulation")
-                } footer: {
-                    Text("Marks every elevator in the fictional demo map as unavailable, to show how the app handles a missing step-free route. Does not reflect any real elevator.")
-                }
-
-                if let map = model.baseMap {
+                if let map = model.map {
                     Section("Map data") {
                         LabeledContent("Map", value: map.name)
                         LabeledContent("Status", value: map.isFictional ? "Fictional demo data" : map.dataStatus.rawValue)
@@ -57,6 +41,10 @@ struct SettingsView: View {
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
+                }
+
+                Section("About Anchor") {
+                    Text("Anchor helps blind and low-vision students get around campus with spoken, landmark-by-landmark directions.")
                 }
             }
             .navigationTitle("Settings")

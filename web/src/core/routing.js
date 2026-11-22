@@ -1,7 +1,4 @@
-export const isStepFree = (connection) =>
-  connection.type !== 'stairs' && connection.stepFree === 'confirmed';
-
-export function planRoute(map, startID, destinationID, requireStepFree = false) {
+export function planRoute(map, startID, destinationID) {
   const byID = new Map(map.landmarks.map((landmark) => [landmark.id, landmark]));
   if (!byID.has(startID) || !byID.has(destinationID))
     return {
@@ -26,9 +23,10 @@ export function planRoute(map, startID, destinationID, requireStepFree = false) 
         .push({ connection, from: connection.to, to: connection.from, reversed: true });
   }
 
-  // Diagnostic searches minimize blocked connections first, then routing cost.
-  // They explain a failure only: their paths must never become offered routes.
-  function search(availabilityRule, suitabilityRule) {
+  // Normal routing excludes unavailable connections. The diagnostic search instead counts
+  // them first and routing cost second, to explain a failure only: its path must never
+  // become an offered route.
+  function search(unavailableRule) {
     const costs = new Map([[startID, [0, 0]]]);
     const previous = new Map();
     const frontier = new Set([startID]);
@@ -43,20 +41,11 @@ export function planRoute(map, startID, destinationID, requireStepFree = false) 
       settled.add(current);
       for (const edge of outgoing.get(current)) {
         if (settled.has(edge.to)) continue;
-        let blocked = 0;
-        let excluded = false;
-        for (const [violated, rule] of [
-          [edge.connection.availability === 'unavailable', availabilityRule],
-          [!isStepFree(edge.connection), suitabilityRule],
-        ]) {
-          if (!violated) continue;
-          if (rule === 'exclude') excluded = true;
-          if (rule === 'penalize') blocked += 1;
-        }
-        if (excluded) continue;
+        const unavailable = edge.connection.availability === 'unavailable';
+        if (unavailable && unavailableRule === 'exclude') continue;
         const prior = costs.get(current);
         const candidate = [
-          prior[0] + blocked,
+          prior[0] + (unavailable ? 1 : 0),
           prior[1] + (edge.connection.routingCost ?? edge.connection.lengthMeters),
         ];
         if (!costs.has(edge.to) || compare(candidate, costs.get(edge.to)) < 0) {
@@ -76,46 +65,30 @@ export function planRoute(map, startID, destinationID, requireStepFree = false) 
     return { edges: edges.reverse(), cost: costs.get(destinationID)[1] };
   }
 
-  const suitability = requireStepFree ? 'exclude' : 'allow';
-  const path = search('exclude', suitability);
+  const path = search('exclude');
   if (!path) {
-    const attempts = [
-      ['unavailable', 'penalize', suitability, (c) => c.availability === 'unavailable'],
-      ...(requireStepFree
-        ? [
-            ['step_free', 'exclude', 'penalize', (c) => !isStepFree(c)],
-            [
-              'both',
-              'penalize',
-              'penalize',
-              (c) => c.availability === 'unavailable' || !isStepFree(c),
-            ],
-          ]
-        : []),
-    ];
-    for (const [reason, availabilityRule, suitabilityRule, isBlocker] of attempts) {
-      const relaxed = search(availabilityRule, suitabilityRule);
-      if (!relaxed) continue;
+    const relaxed = search('penalize');
+    if (relaxed) {
       const blockers = [
         ...new Map(
           relaxed.edges
             .map((e) => e.connection)
-            .filter(isBlocker)
+            .filter((c) => c.availability === 'unavailable')
             .map((c) => [c.id, c]),
         ).values(),
       ];
       return {
         ok: false,
-        reason,
+        reason: 'unavailable',
         blockers,
-        explanation: `No route meets your preferences. Blocking connections: ${blockers.map(describeBlocker).join('; ')}.`,
+        explanation: `Every route to this place needs a connection that is currently unavailable: ${blockers.map((c) => `${c.name} (unavailable)`).join('; ')}.`,
       };
     }
     return {
       ok: false,
       reason: 'not_connected',
       blockers: [],
-      explanation: 'These places are not connected in this map.',
+      explanation: 'These two places are not connected in this map.',
     };
   }
   const legs = path.edges.map((edge, index) => ({
@@ -130,9 +103,6 @@ export function planRoute(map, startID, destinationID, requireStepFree = false) 
     ...(c.verification.status === 'unverified'
       ? [`${c.name}: details have not been verified on site.`]
       : []),
-    ...(!requireStepFree && c.stepFree === 'unknown'
-      ? [`${c.name}: step-free suitability is unknown.`]
-      : []),
   ]);
   return {
     ok: true,
@@ -141,18 +111,8 @@ export function planRoute(map, startID, destinationID, requireStepFree = false) 
     legs,
     warnings,
     totalRoutingCost: path.cost,
-    requireStepFree,
     recordedLengthMeters: legs.reduce((sum, leg) => sum + (leg.connection.lengthMeters ?? 0), 0),
     legsWithUnknownLength: legs.filter((leg) => leg.connection.lengthMeters == null).length,
     usesStairs: legs.some((leg) => leg.connection.type === 'stairs'),
   };
-}
-
-function describeBlocker(c) {
-  const reasons = [];
-  if (c.availability === 'unavailable') reasons.push('unavailable');
-  if (c.type === 'stairs') reasons.push('stairs');
-  else if (c.stepFree === 'unknown') reasons.push('step-free suitability unknown');
-  else if (c.stepFree === 'unsuitable') reasons.push('not suitable for step-free travel');
-  return `${c.name} (${reasons.join(', ')})`;
 }

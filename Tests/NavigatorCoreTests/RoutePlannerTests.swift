@@ -2,18 +2,15 @@ import XCTest
 @testable import NavigatorCore
 
 final class RoutePlannerTests: XCTestCase {
-    private let anyRoute = RoutePreferences(requireStepFree: false)
-    private let stepFree = RoutePreferences(requireStepFree: true)
-
     private func legIDs(_ route: Route) -> [String] {
         route.legs.map(\.connection.id)
     }
 
     // MARK: Demo map scenarios
 
-    func testShortestRouteUsesStairsWhenStepFreeIsOff() throws {
+    func testShortestRouteUsesTheStairs() throws {
         let planner = RoutePlanner(map: try TestSupport.demoMap())
-        let route = try XCTUnwrap(planner.route(from: "plaza", to: "room-201", preferences: anyRoute).successValue)
+        let route = try XCTUnwrap(planner.route(from: "plaza", to: "room-201").successValue)
 
         XCTAssertEqual(legIDs(route), [
             "front-steps", "lobby-doors", "west-to-stairwell",
@@ -24,78 +21,80 @@ final class RoutePlannerTests: XCTestCase {
         XCTAssertTrue(route.usesSimulatedData)
     }
 
-    func testStepFreeRouteUsesRampAndElevatorAndNeverStairs() throws {
-        let planner = RoutePlanner(map: try TestSupport.demoMap())
-        let route = try XCTUnwrap(planner.route(from: "plaza", to: "room-201", preferences: stepFree).successValue)
+    func testClosedStairwellReroutesThroughTheElevator() throws {
+        let map = TestSupport.setting(.unavailable, on: ["stairwell-a-stairs"], in: try TestSupport.demoMap())
+        let route = try XCTUnwrap(RoutePlanner(map: map).route(from: "plaza", to: "room-201").successValue)
 
         XCTAssertEqual(legIDs(route), [
-            "west-ramp", "lobby-doors", "main-corridor", "east-to-elevator",
+            "front-steps", "lobby-doors", "main-corridor", "east-to-elevator",
             "elevator-a", "f2-elevator-to-central", "central-to-room-201",
         ])
-        XCTAssertFalse(route.usesStairs)
-        XCTAssertTrue(route.legs.allSatisfy { $0.connection.stepFree == .confirmed })
-        // Elevator has no recorded length, so it is counted as unknown rather than invented.
+        XCTAssertFalse(legIDs(route).contains("stairwell-a-stairs"))
+        // The elevator has no recorded length, so it is counted as unknown rather than invented.
         XCTAssertEqual(route.legsWithUnknownLength, 1)
-        XCTAssertEqual(route.recordedLengthMeters, 18 + 8 + 25 + 10 + 20 + 6)
+        XCTAssertEqual(route.recordedLengthMeters, 6 + 8 + 25 + 10 + 20 + 6)
     }
 
-    func testElevatorOutageGivesNoRouteInsteadOfFallingBackToStairs() throws {
-        let map = try TestSupport.demoMap().applying(availabilityOverrides: ["elevator-a": .unavailable])
-        let planner = RoutePlanner(map: map)
+    func testEveryWayUpstairsClosedExplainsTheBlocker() throws {
+        let map = TestSupport.setting(.unavailable, on: ["stairwell-a-stairs", "elevator-a"], in: try TestSupport.demoMap())
 
-        let failure = planner.route(from: "plaza", to: "room-201", preferences: stepFree).failureValue
+        let failure = RoutePlanner(map: map).route(from: "plaza", to: "room-201").failureValue
         guard case .noSuitableRoute(let diagnosis)? = failure else {
             return XCTFail("Expected noSuitableRoute, got \(String(describing: failure))")
         }
         XCTAssertEqual(diagnosis.reason, .blockedByUnavailableConnections)
-        XCTAssertEqual(diagnosis.blockingConnections.map(\.id), ["elevator-a"])
-        XCTAssertTrue(diagnosis.explanation.contains("Elevator A"))
-
-        // Without the step-free requirement, the stairs route is still offered.
-        XCTAssertNotNil(planner.route(from: "plaza", to: "room-201", preferences: anyRoute).successValue)
-    }
-
-    func testUnknownStepFreeSuitabilityIsExcludedNotPenalized() throws {
-        let planner = RoutePlanner(map: try TestSupport.demoMap())
-
-        let failure = planner.route(from: "plaza", to: "annex-reading-room", preferences: stepFree).failureValue
-        guard case .noSuitableRoute(let diagnosis)? = failure else {
-            return XCTFail("Expected noSuitableRoute, got \(String(describing: failure))")
-        }
-        XCTAssertEqual(diagnosis.reason, .blockedByStepFreeRequirement)
-        // Only the unavoidable blocker is listed; Floor 2 itself is reachable by elevator.
-        XCTAssertEqual(diagnosis.blockingConnections.map(\.id), ["annex-skybridge"])
-        XCTAssertTrue(diagnosis.explanation.contains("step-free suitability unknown"))
+        XCTAssertEqual(diagnosis.blockingConnections.map(\.id), ["stairwell-a-stairs"])
+        XCTAssertTrue(diagnosis.explanation.contains("Stairwell A stairs (unavailable)"))
     }
 
     func testUnknownAvailabilityIsAllowedButWarned() throws {
         let planner = RoutePlanner(map: try TestSupport.demoMap())
-        let route = try XCTUnwrap(planner.route(from: "plaza", to: "annex-reading-room", preferences: anyRoute).successValue)
+        let route = try XCTUnwrap(planner.route(from: "plaza", to: "annex-reading-room").successValue)
         XCTAssertEqual(route.legs.last?.connection.id, "annex-skybridge")
-        XCTAssertTrue(route.warnings.contains { $0.contains("Skybridge to Annex: current availability is not confirmed") })
-        XCTAssertTrue(route.warnings.contains { $0.contains("step-free suitability is unknown") })
+        XCTAssertEqual(route.warnings, ["Skybridge to Annex: current availability is not confirmed."])
     }
 
     func testOneWayExitDoorIsOnlyUsedInItsDirection() throws {
         let planner = RoutePlanner(map: try TestSupport.demoMap())
 
-        let outbound = try XCTUnwrap(planner.route(from: "room-105", to: "plaza", preferences: stepFree).successValue)
+        let outbound = try XCTUnwrap(planner.route(from: "room-105", to: "plaza").successValue)
         XCTAssertEqual(legIDs(outbound), ["east-to-room-105", "east-exit-door"])
 
-        let inbound = try XCTUnwrap(planner.route(from: "plaza", to: "room-105", preferences: stepFree).successValue)
+        let inbound = try XCTUnwrap(planner.route(from: "plaza", to: "room-105").successValue)
         XCTAssertFalse(legIDs(inbound).contains("east-exit-door"))
-        XCTAssertEqual(legIDs(inbound), ["west-ramp", "lobby-doors", "main-corridor", "east-to-room-105"])
+        XCTAssertEqual(legIDs(inbound), ["front-steps", "lobby-doors", "main-corridor", "east-to-room-105"])
     }
 
     func testReverseInstructionIsUsedWhenTravelingBackwards() throws {
         let planner = RoutePlanner(map: try TestSupport.demoMap())
-        let route = try XCTUnwrap(planner.route(from: "room-201", to: "room-105", preferences: stepFree).successValue)
+        let route = try XCTUnwrap(planner.route(from: "room-201", to: "room-105").successValue)
 
-        let elevatorLeg = try XCTUnwrap(route.legs.first { $0.connection.id == "elevator-a" })
-        XCTAssertTrue(elevatorLeg.isReversed)
-        XCTAssertTrue(elevatorLeg.instruction.contains("select Floor 1"))
+        let stairsLeg = try XCTUnwrap(route.legs.first { $0.connection.id == "stairwell-a-stairs" })
+        XCTAssertTrue(stairsLeg.isReversed)
+        XCTAssertTrue(stairsLeg.instruction.contains("Go down the stairs to Floor 1"))
         XCTAssertEqual(route.landmarksInOrder.first?.id, "room-201")
         XCTAssertEqual(route.landmarksInOrder.last?.id, "room-105")
+    }
+
+    func testEveryDemoRouteIsConnectedAndUsesOnlyUsableConnections() throws {
+        // Covers every start/destination pair, not just the named examples above.
+        let map = try TestSupport.demoMap()
+        let planner = RoutePlanner(map: map)
+        for start in map.startLandmarks {
+            for destination in map.destinationLandmarks where destination.id != start.id {
+                let route = try XCTUnwrap(planner.route(from: start.id, to: destination.id).successValue,
+                                          "\(start.id) -> \(destination.id)")
+                var current = start.id
+                for leg in route.legs {
+                    XCTAssertEqual(leg.from.id, current)
+                    XCTAssertNotEqual(leg.connection.availability, .unavailable)
+                    XCTAssertFalse(leg.instruction.isEmpty)
+                    if leg.isReversed { XCTAssertEqual(leg.connection.direction, .bidirectional) }
+                    current = leg.to.id
+                }
+                XCTAssertEqual(current, destination.id)
+            }
+        }
     }
 
     // MARK: Edge cases on small maps
@@ -105,14 +104,14 @@ final class RoutePlannerTests: XCTestCase {
             landmarks: ["a", "b", "island"].map { TestSupport.landmark($0) },
             connections: [TestSupport.connection("ab", "a", "b")]
         )
-        let failure = RoutePlanner(map: map).route(from: "a", to: "island", preferences: anyRoute).failureValue
+        let failure = RoutePlanner(map: map).route(from: "a", to: "island").failureValue
         XCTAssertEqual(failure, .noSuitableRoute(NoRouteDiagnosis(reason: .notConnected, blockingConnections: [])))
     }
 
     func testSameStartAndDestinationAndUnknownIDs() throws {
         let planner = RoutePlanner(map: try TestSupport.demoMap())
-        XCTAssertEqual(planner.route(from: "plaza", to: "plaza", preferences: anyRoute).failureValue, .sameStartAndDestination)
-        XCTAssertEqual(planner.route(from: "nowhere", to: "plaza", preferences: anyRoute).failureValue, .unknownLandmark("nowhere"))
+        XCTAssertEqual(planner.route(from: "plaza", to: "plaza").failureValue, .sameStartAndDestination)
+        XCTAssertEqual(planner.route(from: "nowhere", to: "plaza").failureValue, .unknownLandmark("nowhere"))
     }
 
     func testUnavailableConnectionIsNeverUsed() {
@@ -124,37 +123,24 @@ final class RoutePlannerTests: XCTestCase {
                 TestSupport.connection("bc", "b", "c", length: 10),
             ]
         )
-        let route = RoutePlanner(map: map).route(from: "a", to: "c", preferences: anyRoute).successValue
+        let route = RoutePlanner(map: map).route(from: "a", to: "c").successValue
         XCTAssertEqual(route.map(legIDs), ["ab", "bc"])
     }
 
-    func testStairsExcludedEvenIfDataWronglyClaimsStepFree() {
-        // MapValidator would reject this map; the planner still refuses as a second line of defense.
-        let map = TestSupport.map(
-            landmarks: ["a", "b"].map { TestSupport.landmark($0) },
-            connections: [TestSupport.connection("bad", "a", "b", type: .stairs, stepFree: .confirmed)]
-        )
-        let failure = RoutePlanner(map: map).route(from: "a", to: "b", preferences: stepFree).failureValue
-        guard case .noSuitableRoute(let diagnosis)? = failure else {
-            return XCTFail("Expected noSuitableRoute")
-        }
-        XCTAssertEqual(diagnosis.reason, .blockedByStepFreeRequirement)
-    }
-
-    func testBlockedByBothReason() {
+    func testOnlyRouteClosedGivesNoRouteInsteadOfUsingIt() {
         let map = TestSupport.map(
             landmarks: ["a", "b", "c"].map { TestSupport.landmark($0) },
             connections: [
-                TestSupport.connection("stairs", "a", "b", type: .stairs, stepFree: .unsuitable),
+                TestSupport.connection("hall", "a", "b"),
                 TestSupport.connection("lift", "b", "c", type: .elevator, length: nil, cost: 20, availability: .unavailable),
             ]
         )
-        let failure = RoutePlanner(map: map).route(from: "a", to: "c", preferences: stepFree).failureValue
+        let failure = RoutePlanner(map: map).route(from: "a", to: "c").failureValue
         guard case .noSuitableRoute(let diagnosis)? = failure else {
             return XCTFail("Expected noSuitableRoute")
         }
-        XCTAssertEqual(diagnosis.reason, .blockedByBoth)
-        XCTAssertEqual(diagnosis.blockingConnections.map(\.id), ["stairs", "lift"])
+        XCTAssertEqual(diagnosis.reason, .blockedByUnavailableConnections)
+        XCTAssertEqual(diagnosis.blockingConnections.map(\.id), ["lift"])
     }
 
     func testRoutingCostCanOverrideLength() {
@@ -163,10 +149,10 @@ final class RoutePlannerTests: XCTestCase {
             landmarks: ["a", "b"].map { TestSupport.landmark($0) },
             connections: [
                 TestSupport.connection("lift", "a", "b", type: .elevator, length: 2, cost: 40),
-                TestSupport.connection("ramp", "a", "b", type: .ramp, length: 30),
+                TestSupport.connection("hall", "a", "b", type: .corridor, length: 30),
             ]
         )
-        let route = RoutePlanner(map: map).route(from: "a", to: "b", preferences: stepFree).successValue
-        XCTAssertEqual(route.map(legIDs), ["ramp"])
+        let route = RoutePlanner(map: map).route(from: "a", to: "b").successValue
+        XCTAssertEqual(route.map(legIDs), ["hall"])
     }
 }

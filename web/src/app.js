@@ -1,4 +1,4 @@
-import { validateMap, withElevatorOutage } from './core/map.js';
+import { validateMap } from './core/map.js';
 import { planRoute } from './core/routing.js';
 import { guidanceSteps, moveStep } from './core/guidance.js';
 import { loadSettings, saveSettings } from './core/settings.js';
@@ -44,9 +44,6 @@ function speak(text) {
 function speakStep() {
   const step = state.steps[state.step];
   speak(step.instruction + (step.cue ? ` Arrival cue: ${step.cue}` : ''));
-}
-function currentMap() {
-  return withElevatorOutage(state.map, settings.simulateElevatorOutage);
 }
 function canSearch() {
   return Boolean(state.startID && state.destinationID && state.startID !== state.destinationID);
@@ -95,14 +92,9 @@ function renderPicker(kind) {
 }
 
 function renderRoute() {
-  state.route = planRoute(
-    currentMap(),
-    state.startID,
-    state.destinationID,
-    settings.requireStepFree,
-  );
-  $('#result').innerHTML = routeSummary(state.route, state.map, settings);
-  if (state.route.ok) renderMap($('#map'), currentMap(), state.route);
+  state.route = planRoute(state.map, state.startID, state.destinationID);
+  $('#result').innerHTML = routeSummary(state.route);
+  if (state.route.ok) renderMap($('#map'), state.map, state.route);
 }
 
 function renderGuidance(announce = true) {
@@ -185,9 +177,6 @@ function syncSettings() {
     if (input.type === 'checkbox') input.checked = settings[input.dataset.setting];
     else input.value = settings[input.dataset.setting];
   });
-  $('#step-free-description').textContent = settings.requireStepFree
-    ? 'Only connections confirmed step-free are used. Stairs and anything unconfirmed are excluded.'
-    : 'The shortest route may include stairs.';
   $('#threshold-label').textContent = `${settings.nearbyAlertDistance} m`;
   const alerts = [
     settings.nearbyAudioAlerts && 'audio',
@@ -196,15 +185,6 @@ function syncSettings() {
   $('#alert-summary').textContent = alerts.length
     ? `Simulated alerts on (${alerts.join(' and ')}) for surfaces closer than ${settings.nearbyAlertDistance} m. Change in Settings.`
     : 'Alerts are off. Turn on audio or haptic alerts in Settings.';
-  const outages =
-    settings.simulateElevatorOutage && state.map
-      ? state.map.connections
-          .filter((c) => c.type === 'elevator')
-          .map((c) => `Simulated: ${c.name} is out of service (demo setting).`)
-          .join(' ')
-      : '';
-  $('.outage-notice').hidden = !outages;
-  $('.outage-notice').textContent = outages;
 }
 
 function changeSetting(key, value) {
@@ -213,12 +193,6 @@ function changeSetting(key, value) {
   $('#settings-status').textContent = saveSettings(storage, settings)
     ? 'Preferences saved in this browser.'
     : 'Storage is unavailable. Your preferences will last for this session only.';
-  if (key === 'requireStepFree' || key === 'simulateElevatorOutage') {
-    stopSpeech();
-    state.steps = null;
-    if (state.route) renderRoute();
-    $('#route-notice').textContent = 'Routing preferences updated.';
-  }
   if (key === 'spokenDirections' || key === 'nearbyAudioAlerts') stopSpeech();
   if (key === 'nearbyAlertDistance') state.policy = new ProximityPolicy(value);
 }
@@ -287,7 +261,6 @@ $('#picker-options').addEventListener('change', (event) => {
   state[`${kind}ID`] = event.target.value;
   state.route = null;
   state.steps = null;
-  $('#route-notice').textContent = '';
   goTo('routes', { focusID: `${kind}-picker` });
 });
 $('#picker-options').addEventListener('click', (event) => {

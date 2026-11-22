@@ -12,14 +12,8 @@ export const typeName = (type) =>
     elevator: 'Elevator',
     bridge: 'Bridge',
   })[type];
-export const suitabilityName = (value) =>
-  ({
-    confirmed: 'Step-free: confirmed',
-    unsuitable: 'Step-free: not suitable',
-    unknown: 'Step-free: unknown',
-  })[value];
 export function connectionDetails(c) {
-  return `${typeName(c.type)}: ${c.name}\n${c.lengthMeters == null ? 'Length not recorded' : `Recorded length: ${c.lengthMeters} m (simulated)`}\n${suitabilityName(c.stepFree)}\n${c.availability === 'unknown' ? 'Availability unknown' : c.availability === 'unavailable' ? 'Unavailable' : 'Available'}`;
+  return `${typeName(c.type)}: ${c.name}\n${c.lengthMeters == null ? 'Length not recorded' : `Recorded length: ${c.lengthMeters} m (simulated)`}\n${c.availability === 'unknown' ? 'Availability unknown' : c.availability === 'unavailable' ? 'Unavailable' : 'Available'}`;
 }
 
 // Follow RouteSchematicView.swift: visited floors, numbered stops, dashed route,
