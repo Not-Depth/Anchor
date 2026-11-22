@@ -33,7 +33,7 @@ The new warning lines are produced by the existing phrase catalog. The team bran
 
 ## Verification on November 21
 
-- Swift 6.4.2 on Linux passed 64 tests. The clip coverage test was skipped because the recordings are absent. The voice tool's list includes the new warnings. All app Swift files passed syntax parsing for iOS device and simulator.
+- Swift 6.4.2 on Linux passed 64 tests. The clip coverage test was skipped because the recordings are absent. The voice tool's list includes the new warnings. On macOS, Swift tests and both Xcode builds (simulator and unsigned device) passed. [GitHub Actions evidence](https://github.com/Not-Depth/Anchor/actions/runs/44979723578)
 - A harness using the actual AppSettings source checked the fresh 3 m default and the full set of saved distance choices across relaunches. It also checked saved voice, directions, audio, haptics, floor checks and onboarding.
 - The web companion passed 31 core/server tests and 22 browser tests, including accessible step names and focus, keyboard and narrow viewports, Nearby recovery and automated accessibility checks in both color modes.
 - The guide was compared with the planner, including closure handling. The physical trial above and Johnny's review are the remaining acceptance checks.

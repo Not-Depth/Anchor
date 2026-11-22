@@ -39,8 +39,7 @@ A native iPhone app (Swift, SwiftUI) with three tabs:
 |---|---|
 | `Core/` (map model, validation, Dijkstra, guidance, depth math, alert logic, spoken phrases, floor-change logic) | Compiled with Swift 6.4.2 on Linux. **64 unit tests pass** (`swift test`); one more checks the recorded voice clips and is skipped until they exist. |
 | `demo_map.json` | Loads and passes all validation rules (checked by the tests). |
-| `UBAccessNavigator.xcodeproj` | Written by hand in Xcode 16's project format. Parsed and every internal reference checked, but **not yet opened in Xcode**. |
-| SwiftUI / ARKit / speech code | **Not compiled yet.** It needs Xcode on a Mac. The first build on your Mac is the real check. (`SpeechService`, `VoiceClipLibrary`, `FloorTracker`, `AppSettings` and `AppModel` were type-checked on Linux against stand-ins for AVFoundation, UIKit and CoreMotion, which catches typos but not framework mistakes.) |
+| Xcode project and iOS app | Swift tests and simulator and unsigned device builds passed on [GitHub Actions](https://github.com/Not-Depth/Anchor/actions/runs/44979723578). Physical LiDAR, VoiceOver and floor checks need a device trial. |
 
 If the first build shows errors, paste them back and they can be fixed quickly.
 
