@@ -66,11 +66,17 @@ test('summary and full-screen manual guidance match the native screen flow', asy
   await expect(page.locator('.route-steps')).toContainText('Walk up the five front steps');
   await expect(page.locator('#map .floor')).toHaveCount(2);
   await page.getByRole('button', { name: 'Start guidance', exact: true }).click();
+  const instruction = page.locator('#guidance-instruction');
+  await expect(instruction).toBeFocused();
+  await expect(instruction).toHaveAccessibleName(
+    /^Fictional demo route to Room 201 .*Step 1 of 8.*Arrival cue:/,
+  );
   await expect(page.locator('#tab-bar')).toBeHidden();
   await expect(page.getByRole('button', { name: 'Previous step', exact: true })).toBeDisabled();
   await expect(page.getByRole('heading', { name: 'Next', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Repeat', exact: true })).toHaveCount(0);
   await page.locator('#confirm-step').click();
+  await expect(instruction).toHaveAccessibleName(/^Step 2 of 8.*Arrival cue:/);
   await expect(page.locator('#guidance-instruction')).toContainText('Walk up the five front steps');
   await expect(page.getByRole('heading', { name: 'Previous', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Previous step', exact: true }).click();
@@ -154,13 +160,20 @@ test('Nearby shows unsupported hardware first and explicitly opts into simulatio
   await expect(page.getByRole('button', { name: 'Start simulation' })).toBeHidden();
   await page.getByText('Try simulated readings', { exact: true }).click();
   await expect(page.getByText('Simulation only.', { exact: true })).toBeVisible();
+  await expect(page.locator('#threshold-label')).toHaveText('3 m');
+  await page.locator('#distance').fill('3.1');
   await page.getByRole('button', { name: 'Start simulation' }).click();
-  await page.locator('#distance').fill('0.5');
-  await expect(page.locator('#nearby-event')).toContainText('Simulated surface within 0.50 meters');
+  await page.locator('#distance').fill('3');
+  await expect(page.locator('#nearby-event')).toHaveText(
+    'Simulation: Warning, objects ahead at 3.0 meters.',
+  );
   await page.getByRole('switch', { name: 'Simulate lost readings' }).check();
   await expect(page.locator('#nearby-event')).toContainText('Simulated depth readings unavailable');
   await page.getByRole('switch', { name: 'Simulate lost readings' }).uncheck();
   await expect(page.locator('#sensor-state')).toContainText('Inside the alert distance');
+  await expect(page.locator('#nearby-event')).toHaveText(
+    'Simulation: Warning, objects ahead at 3.0 meters.',
+  );
   await page.getByText('Try simulated readings', { exact: true }).click();
   await page.getByText('Try simulated readings', { exact: true }).click();
   await expect(page.getByRole('button', { name: 'Start simulation' })).toBeVisible();

@@ -1,10 +1,10 @@
 export const SETTINGS_KEY = 'anchor.web.settings.v1';
-export const distanceOptions = [0.5, 0.75, 1, 1.5, 2];
+export const distanceOptions = [0.5, 0.75, 1, 1.5, 2, 3];
 export const defaults = Object.freeze({
   spokenDirections: false,
   nearbyAudioAlerts: false,
   nearbyHapticAlerts: false,
-  nearbyAlertDistance: 1,
+  nearbyAlertDistance: 3,
 });
 
 export function loadSettings(storage) {

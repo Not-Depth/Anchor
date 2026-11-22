@@ -32,14 +32,22 @@ export function routeSummary(route) {
     <section class="form-section"><h2 class="section-label">Schematic (not to scale)</h2><div id="map" class="group floor-maps"></div><p class="section-footer">A simplified drawing. The steps above contain all the route information.</p></section>`;
 }
 
-export function guidanceContent(steps, index, settings, speechSupported, speechPaused) {
+export function guidanceContent(
+  steps,
+  index,
+  destination,
+  settings,
+  speechSupported,
+  speechPaused,
+) {
   const step = steps[index];
+  const intro = index === 0 ? `Fictional demo route to ${destination}. ` : '';
   const preview = (title, item) =>
     item
       ? `<section class="preview-card"><h2>${title}</h2><p>${html(item.instruction)}</p></section>`
       : '';
   return `<p class="guidance-notice"><span class="warning-icon" aria-hidden="true">⚠</span> Fictional demo route</p>
-    <div><h2 id="guidance-instruction" class="guidance-instruction" tabindex="-1" aria-label="${html(`Step ${index + 1} of ${steps.length}. ${step.instruction}${step.cue ? ` Arrival cue: ${step.cue}` : ''}`)}">${html(step.instruction)}</h2>
+    <div><h2 id="guidance-instruction" class="guidance-instruction" tabindex="-1" aria-label="${html(`${intro}Step ${index + 1} of ${steps.length}. ${step.instruction}${step.cue ? ` Arrival cue: ${step.cue}` : ''}`)}">${html(step.instruction)}</h2>
     ${step.cue ? `<p class="guidance-cue" aria-hidden="true">Arrival cue: ${html(step.cue)}</p>` : ''}
     ${step.connection ? `<p class="guidance-details secondary">${html(connectionDetails(step.connection))}</p>` : ''}</div>
     <button id="${step.confirm ? 'confirm-step' : 'finish-guidance'}" class="button primary guidance-confirm">${html(step.confirm ?? 'Finish')}</button>

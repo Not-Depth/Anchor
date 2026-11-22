@@ -19,6 +19,11 @@ struct GuidanceView: View {
 
     private var step: GuidanceStep { guidance.current }
 
+    private var instructionAccessibilityLabel: String {
+        let instruction = "\(step.progressLabel). \(step.spokenText)"
+        return step.kind == .confirmStart ? "\(guidance.introText) \(instruction)" : instruction
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -162,7 +167,7 @@ struct GuidanceView: View {
                 .accessibilityAddTraits(.isHeader)
                 // One element holds the progress, instruction and cue, so VoiceOver reads
                 // the whole step when focus moves here.
-                .accessibilityLabel("\(step.progressLabel). \(step.spokenText)")
+                .accessibilityLabel(instructionAccessibilityLabel)
 
             if let cue = step.arrivalCue {
                 Label {

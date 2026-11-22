@@ -161,7 +161,7 @@ struct NearbyView: View {
             var kinds: [String] = []
             if settings.nearbyAudioAlerts { kinds.append("audio") }
             if settings.nearbyHapticAlerts { kinds.append("haptic") }
-            text = "Alerts on (\(kinds.joined(separator: " and "))) for surfaces closer than \(String(format: "%.2g", settings.nearbyAlertDistance)) m. Change in Settings."
+            text = "Alerts on (\(kinds.joined(separator: " and "))) for surfaces at or within \(String(format: "%.2g", settings.nearbyAlertDistance)) m. Change in Settings."
         } else {
             text = "Alerts are off. Turn on audio or haptic alerts in Settings."
         }

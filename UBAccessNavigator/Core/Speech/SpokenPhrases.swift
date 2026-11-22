@@ -18,9 +18,8 @@ public enum SpokenPhrases {
         "Floor change sensed: you went \(change.direction.word) \(FloorText.count(change.floors))."
     }
 
-    /// Nearby alert, e.g. "Surface at 0.8 meters".
-    static func surface(atMeters distance: Double) -> String {
-        "Surface at \(DistanceText.spokenDepth(distance))"
+    static func obstacleWarning(atMeters distance: Double) -> String {
+        "Warning, objects ahead at \(DistanceText.spokenDepth(distance))."
     }
 
     /// Every distance a nearby alert can report, at the one-decimal precision it is spoken.
@@ -42,7 +41,7 @@ public enum SpokenPhrases {
         var phrases: Set<String> = [voiceTest, depthReadingsUnavailable, depthReadingsRestored,
                                     floorChangeWrongDirection, floorChangeWrongCount]
         for distance in alertDistances() {
-            phrases.insert(surface(atMeters: distance))
+            phrases.insert(obstacleWarning(atMeters: distance))
         }
 
         // Every route the Routes screen can produce, spoken exactly as GuidanceView speaks it.

@@ -90,7 +90,7 @@ The simulation stops when you leave Nearby, collapse its controls, or hide the b
 3. Room 201 -> Room 105 uses the authored reverse directions ("Go down the stairs to Floor 1…").
 4. North Plaza -> Annex reading room: the route includes a warning that the skybridge's availability is not confirmed.
 5. Room 105 -> North Plaza uses the exit-only door; the reverse trip does not.
-6. Nearby -> Try simulated readings -> Start simulation: move below 1 m, enable lost readings, then restore them. Enable optional audio in Settings. These are synthetic readings, not measurements.
+6. Nearby -> Try simulated readings -> Start simulation: move from outside to within the selected alert distance. New setups use 3 m and keep any distance already saved. Enable lost readings, wait for the unavailable message, then restore the close reading to hear the warning first if audio is enabled. The readings are simulated.
 
 ## Project structure
 

@@ -18,7 +18,8 @@ struct ProximityAlertPolicy {
     }
 
     /// Alert distances offered in Settings, in meters.
-    static let alertDistanceOptions: [Double] = [0.5, 0.75, 1.0, 1.5, 2.0]
+    static let alertDistanceOptions: [Double] = [0.5, 0.75, 1.0, 1.5, 2.0, 3.0]
+    static let defaultAlertDistance = 3.0
 
     var alertDistance: Double
     var hysteresis: Double = 0.25
@@ -57,8 +58,8 @@ struct ProximityAlertPolicy {
         unreliableSince = nil
         if reportedUnreliable {
             reportedUnreliable = false
-            isNear = false  // re-evaluate from scratch after an outage
-            return .readingsRestored
+            // A close reading takes priority over the recovery announcement.
+            if distance > alertDistance { return .readingsRestored }
         }
 
         if isNear {

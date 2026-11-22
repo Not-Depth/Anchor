@@ -74,7 +74,7 @@ final class AppSettings {
             Key.spokenDirections: true,
             Key.nearbyAudioAlerts: false,
             Key.nearbyHapticAlerts: false,
-            Key.nearbyAlertDistance: 1.0,
+            Key.nearbyAlertDistance: ProximityAlertPolicy.defaultAlertDistance,
             Key.speechVoice: SpeechVoice.anchor.rawValue,
             Key.floorDetection: true,
             Key.hasSeenFloorIntro: false,

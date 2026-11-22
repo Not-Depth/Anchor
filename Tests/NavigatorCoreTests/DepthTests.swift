@@ -88,6 +88,17 @@ final class ProximityAlertPolicyTests: XCTestCase {
         XCTAssertNil(policy.update(reading: reading(0.9, at: 0.4), now: 0.4))   // same near zone, interval not elapsed
     }
 
+    func testThreeMeterThresholdWarnsOnFirstSampleWithoutRepeatingOnTimer() {
+        let threshold = ProximityAlertPolicy.defaultAlertDistance
+        XCTAssertEqual(threshold, 3)
+        XCTAssertTrue(ProximityAlertPolicy.alertDistanceOptions.contains(threshold))
+        var policy = ProximityAlertPolicy(alertDistance: threshold)
+        XCTAssertNil(policy.update(reading: reading(3.01, at: 0), now: 0))
+        let frame = reading(3, at: 0.03)
+        XCTAssertEqual(policy.update(reading: frame, now: 0.03), .near(distanceMeters: 3))
+        XCTAssertNil(policy.update(reading: frame, now: 0.2))
+    }
+
     func testReportsUnreliableOnceAfterGraceThenRestored() {
         var policy = ProximityAlertPolicy(alertDistance: 1.0)
         // No "unreliable" before the first good reading (sensor still warming up).
@@ -107,5 +118,15 @@ final class ProximityAlertPolicyTests: XCTestCase {
         // Frames stopped arriving: the last reading (t = 0) ages out.
         XCTAssertNil(policy.update(reading: reading(0.5, at: 0), now: 0.7))
         XCTAssertEqual(policy.update(reading: reading(0.5, at: 0), now: 1.8), .readingsUnreliable)
+    }
+
+    func testFirstFreshCloseReadingAfterOutageWarnsInsteadOfAnnouncingRecovery() {
+        var policy = ProximityAlertPolicy(alertDistance: 3)
+        XCTAssertEqual(policy.update(reading: reading(2, at: 0), now: 0), .near(distanceMeters: 2))
+        XCTAssertNil(policy.update(reading: nil, now: 0.2))
+        XCTAssertEqual(policy.update(reading: nil, now: 1.3), .readingsUnreliable)
+        XCTAssertNil(policy.update(reading: reading(0.5, at: 0.3), now: 1.4))
+        XCTAssertEqual(policy.update(reading: reading(2, at: 1.5), now: 1.5), .near(distanceMeters: 2))
+        XCTAssertNil(policy.update(reading: reading(2, at: 1.6), now: 1.6))
     }
 }

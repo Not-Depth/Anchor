@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anchor blind navigation guide - North Plaza to Room 201</title>
+  <style>
+    :root { color: #173438; background: #fff; font: 112.5%/1.5 system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { max-width: 48rem; margin: auto; padding: 2rem clamp(1rem, 4vw, 3rem); }
+    header { border-top: .25rem solid #00675e; padding-top: .7rem; }
+    h1, h2, p, ol { margin: 0; }
+    h1 { font-size: clamp(1.8rem, 5vw, 2.7rem); line-height: 1.12; letter-spacing: -.025em; }
+    h2 { font-size: 1.05rem; line-height: 1.3; }
+    .name { color: #00675e; font-weight: 750; font-size: .8rem; letter-spacing: .05em; margin-bottom: .3rem; }
+    .intro, .how { margin-top: .6rem; }
+    .how { border-left: .2rem solid #00675e; padding-left: .8rem; }
+    ol { padding-left: 1.5rem; margin-top: 1rem; }
+    li { margin-bottom: 1rem; padding-left: .25rem; break-inside: avoid; }
+    li::marker { font-weight: 750; color: #00675e; }
+    li p { margin-top: .25rem; }
+    .cue, .confirm { color: #40595d; }
+    .confirm { font-size: .9rem; }
+    .arrival { margin-top: .15rem; }
+    .notes { border-top: 1px solid #8caaa6; padding-top: .8rem; margin-top: .75rem; }
+    .notes p + p { margin-top: .5rem; }
+    footer { border-top: 1px solid #8caaa6; margin-top: .8rem; padding-top: .6rem; font-size: .78rem; color: #40595d; }
+    a { color: #005952; text-underline-offset: .15em; }
+    a:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+    @page { size: letter; margin: .48in .55in; }
+    @media print {
+      :root { font-size: 10.5pt; line-height: 1.32; }
+      main { max-width: none; padding: 0; }
+      h1 { font-size: 24pt; }
+      h2 { font-size: 10.7pt; }
+      .intro, .how { margin-top: .4rem; }
+      ol { columns: 2; column-gap: 1.9rem; margin-top: .8rem; }
+      li { margin-bottom: .65rem; }
+      li p { margin-top: .18rem; }
+      .confirm { font-size: 9.5pt; }
+      .notes { margin-top: .5rem; padding-top: .5rem; }
+      footer { font-size: 8.5pt; }
+      a { color: inherit; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="name">Anchor / Blind navigation guide</p>
+    <h1>North Plaza to Room 201</h1>
+    <p class="intro"><strong>Fictional Demo Hall.</strong> This route uses the front steps and Stairwell A. All places, arrival cues, distances and availability are simulated for team review.</p>
+    <p class="how">Confirm the start, then each landmark in the app when you reach it. Your confirmation advances guidance. Choose <strong>Previous step</strong> if you confirmed too early. With spoken directions enabled, <strong>Repeat</strong> reads the current instruction and arrival cue again.</p>
+  </header>
+
+  <ol aria-label="Route confirmations in travel order">
+    <li data-landmark="plaza">
+      <h2>Confirm the start</h2>
+      <p class="instruction">Start at North Plaza (outside).</p>
+      <p class="cue"><strong>Arrival cue.</strong> <span>Open paved area with a bike rack and benches.</span></p>
+      <p class="confirm">Choose <q>I'm at North Plaza (outside)</q>.</p>
+    </li>
+    <li data-landmark="main-entrance" data-leg="front-steps" data-length="6">
+      <h2>Main Entrance lobby</h2>
+      <p class="instruction">Walk up the five front steps to the main entrance doors. There are handrails on both sides.</p>
+      <p class="cue"><strong>Arrival cue.</strong> <span>Small lobby between two sets of doors, with a floor mat underfoot.</span></p>
+      <p class="confirm">Choose <q>I've reached Main Entrance lobby</q>.</p>
+    </li>
+    <li data-landmark="f1-west-junction" data-leg="lobby-doors" data-length="8">
+      <h2>West junction, Floor 1</h2>
+      <p class="instruction">Go through the inner lobby doors and continue straight until the corridor meets a cross corridor.</p>
+      <p class="cue"><strong>Arrival cue.</strong> <span>Corridors meet here; a drinking fountain hums against the wall.</span></p>
+      <p class="confirm">Choose <q>I've reached West junction, Floor 1</q>.</p>
+    </li>
+    <li data-landmark="f1-stairwell-a" data-leg="west-to-stairwell" data-length="6">
+      <h2>Stairwell A door, Floor 1</h2>
+      <p class="instruction">Continue straight across the junction to the end of the short corridor, where the Stairwell A door is.</p>
+      <p class="cue"><strong>Arrival cue.</strong> <span>Heavy door with a push bar; the stairwell echoes when it opens.</span></p>
+      <p class="confirm">Choose <q>I've reached Stairwell A door, Floor 1</q>.</p>
+    </li>
+    <li data-landmark="f2-stairwell-a" data-leg="stairwell-a-stairs" data-length="unknown">
+      <h2>Stairwell A door, Floor 2</h2>
+      <p class="instruction">Go up the stairs to Floor 2: two flights with a landing between them, handrails on both sides. Leave through the Floor 2 door.</p>
+      <p class="cue"><strong>Arrival cue.</strong> <span>Stairwell door with the floor number in raised letters on the frame.</span></p>
+      <p class="confirm">Choose <q>I've reached Stairwell A door, Floor 2</q>.</p>
+    </li>
+    <li data-landmark="f2-central-junction" data-leg="f2-stairwell-to-central" data-length="9">
+      <h2>Central junction, Floor 2</h2>
+      <p class="instruction">Leave the stairwell and follow the corridor until it opens into the wide carpeted area.</p>
+      <p class="cue"><strong>Arrival cue.</strong> <span>Wide carpeted area with a seating area to one side.</span></p>
+      <p class="confirm">Choose <q>I've reached Central junction, Floor 2</q>.</p>
+    </li>
+    <li data-landmark="room-201" data-leg="central-to-room-201" data-length="6">
+      <h2>Room 201 (demo lab)</h2>
+      <p class="instruction">Cross the carpeted area to the door on the far side of the seating area. That door is Room 201.</p>
+      <p class="cue"><strong>Arrival cue.</strong> <span>Door with a raised-letter and braille sign reading 201.</span></p>
+      <p class="confirm">Choose <q>I've reached Room 201 (demo lab)</q>.</p>
+    </li>
+  </ol>
+  <p class="arrival"><strong data-arrived="true">You have arrived at Room 201 (demo lab).</strong> Choose <strong>Finish</strong> to close guidance.</p>
+
+  <section class="notes" aria-label="Floor checks and route availability">
+    <p><strong>Optional iPhone floor check.</strong> With Floor changes enabled and Motion &amp; Fitness allowed, the barometer estimates the one-floor ascent during step 5. Check the raised floor sign and confirm the landmark yourself, including when readings are unavailable. Air-pressure changes can affect the estimate. The web companion uses manual confirmation.</p>
+    <p><strong>If a connection closes.</strong> Replanning with Stairwell A stairs marked unavailable uses Elevator A. If both are unavailable, planning reports <q>No route found</q>. This route records <strong>35 m</strong> of simulated lengths plus a stairwell segment whose length is unrecorded.</p>
+  </section>
+  <footer>Reviewed against the November 20 code. <a href="https://github.com/Not-Depth/Anchor/blob/d9c49a429db39938661f2da77136693d1d2363aa/UBAccessNavigator/Resources/demo_map.json">Map and authored cues</a> · <a href="https://github.com/Not-Depth/Anchor/blob/d9c49a429db39938661f2da77136693d1d2363aa/UBAccessNavigator/Features/Routes/GuidanceView.swift">Guidance and floor checks</a></footer>
+</main>
+</body>
+</html>

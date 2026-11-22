@@ -11,7 +11,7 @@ export class ProximityPolicy {
   }
 
   update(distance, now) {
-    if (!Number.isFinite(distance) || distance < 0) {
+    if (!Number.isFinite(distance) || distance < 0.1 || distance > 5) {
       if (!this.hadReading || this.reportedLoss) return null;
       this.unreliableSince ??= now;
       if (now - this.unreliableSince >= 1000) {
@@ -25,8 +25,7 @@ export class ProximityPolicy {
     this.unreliableSince = null;
     if (this.reportedLoss) {
       this.reportedLoss = false;
-      this.near = false;
-      return 'restored';
+      if (distance > this.threshold) return 'restored';
     }
     if (this.near && distance > this.threshold + 0.25) this.near = false;
     else if (this.near || distance <= this.threshold) {

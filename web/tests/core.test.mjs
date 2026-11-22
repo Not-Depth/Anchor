@@ -220,6 +220,9 @@ test('settings persist independently and invalid stored types are discarded', ()
   assert.equal(loadSettings(storage).nearbyHapticAlerts, true);
   assert.equal(loadSettings(storage).nearbyAudioAlerts, true);
   assert.equal(loadSettings(storage).spokenDirections, false);
+  assert.equal(loadSettings(storage).nearbyAlertDistance, 3);
+  store.set(SETTINGS_KEY, '{"nearbyAlertDistance":1}');
+  assert.equal(loadSettings(storage).nearbyAlertDistance, 1);
   store.set(SETTINGS_KEY, '{"nearbyHapticAlerts":"false","nearbyAlertDistance":-1}');
   assert.deepEqual(loadSettings(storage), defaults);
   store.set(SETTINGS_KEY, '{invalid');
@@ -266,8 +269,18 @@ test('lost readings get a grace period, one warning and a recovery event', () =>
   assert.equal(policy.update(null, 1019), null);
   assert.equal(policy.update(null, 1020), 'unreliable');
   assert.equal(policy.update(null, 5000), null);
-  assert.equal(policy.update(0.5, 5010), 'restored');
+  assert.equal(policy.update(2, 5010), 'restored');
   assert.equal(policy.update(0.5, 5020), 'near');
+});
+test('the first close reading at 3 m warns on recovery ahead of restored status', () => {
+  const policy = new ProximityPolicy(3);
+  assert.equal(policy.update(3.01, 0), null);
+  assert.equal(policy.update(3, 10), 'near');
+  assert.equal(policy.update(null, 20), null);
+  assert.equal(policy.update(null, 1020), 'unreliable');
+  assert.equal(policy.update(0, 1030), null);
+  assert.equal(policy.update(2.8, 1040), 'near');
+  assert.equal(policy.update(2.7, 1050), null);
 });
 
 test('every selectable route obeys constraints, including with the stairwell closed', () => {

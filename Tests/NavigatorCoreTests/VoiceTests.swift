@@ -47,14 +47,15 @@ final class SpokenPhrasesTests: XCTestCase {
     }
 
     /// Readings start at 0.1 m, and an alert can repeat up to the largest alert distance
-    /// (2 m) plus the 0.25 m hysteresis.
+    /// (3 m) plus the 0.25 m hysteresis.
     func testEveryDistanceAnAlertCanSpeakIsInCatalog() throws {
         let catalog = Set(SpokenPhrases.all(in: try TestSupport.demoMap()))
-        for millimeters in 100...2250 {
-            let phrase = SpokenPhrases.surface(atMeters: Double(millimeters) / 1000)
+        for millimeters in 100...3250 {
+            let phrase = SpokenPhrases.obstacleWarning(atMeters: Double(millimeters) / 1000)
             XCTAssertTrue(catalog.contains(phrase), "Missing: \(phrase)")
         }
-        XCTAssertEqual(SpokenPhrases.surface(atMeters: 0.8), "Surface at 0.8 meters")
+        XCTAssertEqual(SpokenPhrases.obstacleWarning(atMeters: 1.26), "Warning, objects ahead at 1.3 meters.")
+        XCTAssertTrue(catalog.contains("Warning, objects ahead at 3.0 meters."))
     }
 
     func testCatalogIsSortedWithoutDuplicatesOrBlanks() throws {

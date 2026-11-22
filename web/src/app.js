@@ -102,6 +102,7 @@ function renderGuidance(announce = true) {
   $('#guidance-content').innerHTML = guidanceContent(
     state.steps,
     state.step,
+    state.route.destination.name,
     settings,
     speechSupported,
     state.speechPaused,
@@ -183,7 +184,7 @@ function syncSettings() {
     settings.nearbyHapticAlerts && 'haptic',
   ].filter(Boolean);
   $('#alert-summary').textContent = alerts.length
-    ? `Simulated alerts on (${alerts.join(' and ')}) for surfaces closer than ${settings.nearbyAlertDistance} m. Change in Settings.`
+    ? `Simulated alerts on (${alerts.join(' and ')}) for surfaces at or within ${settings.nearbyAlertDistance} m. Change in Settings.`
     : 'Alerts are off. Turn on audio or haptic alerts in Settings.';
 }
 
@@ -220,7 +221,7 @@ function simulationTick() {
   if (!event) return;
   const message =
     event === 'near'
-      ? `Simulated surface within ${distance.toFixed(2)} meters.`
+      ? `Simulation: Warning, objects ahead at ${distance.toFixed(1)} meters.`
       : event === 'unreliable'
         ? 'Simulated depth readings unavailable.'
         : 'Simulated depth readings restored.';
@@ -319,8 +320,12 @@ $('#simulation-toggle').addEventListener('click', () => {
 $('#simulation-details').addEventListener('toggle', () => {
   if (!$('#simulation-details').open) stopSimulation();
 });
-$('#distance').addEventListener('input', updateDistance);
-$('#unreliable').addEventListener('change', updateDistance);
+function updateSimulationInput() {
+  if (state.simulation) simulationTick();
+  else updateDistance();
+}
+$('#distance').addEventListener('input', updateSimulationInput);
+$('#unreliable').addEventListener('change', updateSimulationInput);
 $('.skip-link').addEventListener('click', (event) => {
   event.preventDefault();
   $('#main').focus();
