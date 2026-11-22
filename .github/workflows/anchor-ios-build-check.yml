@@ -1,0 +1,21 @@
+name: Anchor iOS build check
+
+on:
+  push:
+    branches: [ken-blind-ios-check]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - run: xcodebuild -version
+      - run: swift test
+      - name: Build iOS simulator
+        run: xcodebuild -project UBAccessNavigator.xcodeproj -scheme UBAccessNavigator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+      - name: Build iOS device
+        run: xcodebuild -project UBAccessNavigator.xcodeproj -scheme UBAccessNavigator -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
